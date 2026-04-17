@@ -124,7 +124,7 @@ export default function MainContent() {
               cursor: 'pointer', fontSize: '13px', fontWeight: 500
             }}>
             <span>📊</span>
-            <span>Raporlar</span>
+            <span>{raporlarAcik ? 'CPR Üret' : 'Raporlar'}</span>
           </button>
         </div>
 
