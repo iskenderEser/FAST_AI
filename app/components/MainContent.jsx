@@ -83,9 +83,6 @@ export default function MainContent() {
                     <div style={{ fontSize: '13px', fontWeight: 500 }}>{kullaniciAd || 'Kullanıcı'}</div>
                     <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{firmaAd}</div>
                   </div>
-                  <div style={{ padding: '10px 16px', borderBottom: '0.5px solid var(--border)', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                    İndirilen PDF: <strong>{currentUser?.pdf_count ?? '—'}</strong>
-                  </div>
                   <div
                     onClick={() => { setProfilDropdownOpen(false); setS4ModalOpen(true); }}
                     style={{
