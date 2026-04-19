@@ -10,7 +10,7 @@ export async function POST(request) {
       urun_id,
       stil, urun, ozellikler, claim, problem,
       kullanim_sekli, pozoloji,
-      rakip, rakip_etken, rakip_doz
+      rakip, rakip_etken
     } = await request.json()
 
     if (!kullanici_id || !firma_id || !urun_id) {
@@ -39,12 +39,11 @@ export async function POST(request) {
 
     const ozelliklerStr = Array.isArray(ozellikler) ? ozellikler.join(', ') : (ozellikler || '')
 
-    // Rakip bilgisi — girilen veriler kullanılır, AI tahmin etmez
+    // Rakip bilgisi — sadece ad ve etken madde, doz AI'a bırakılıyor
     let rakipBilgisi = 'belirtilmedi'
     if (rakip && rakip.trim()) {
       rakipBilgisi = rakip.trim()
       if (rakip_etken && rakip_etken.trim()) rakipBilgisi += ` (${rakip_etken.trim()})`
-      if (rakip_doz && rakip_doz.trim()) rakipBilgisi += ` — ${rakip_doz.trim()}`
     }
 
     const finalPrompt = data.prompt_text

@@ -16,7 +16,6 @@ export default function Kart3TedaviUrun() {
     selectedRakip,
     handleRakipChange,
     selectedRakipEtken, setSelectedRakipEtken,
-    selectedRakipDoz, setSelectedRakipDoz,
   } = useFastCPR();
 
   return (
@@ -182,22 +181,6 @@ export default function Kart3TedaviUrun() {
                 />
               </div>
 
-              {/* Doz */}
-              <div style={{ flex: 1, minWidth: '100px' }}>
-                <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Günlük Doz</div>
-                <input
-                  type="text"
-                  value={selectedRakipDoz}
-                  onChange={e => setSelectedRakipDoz(e.target.value)}
-                  placeholder="Örn: 2x1"
-                  style={{
-                    width: '100%', padding: '10px',
-                    border: '1px solid var(--border)', borderRadius: '8px',
-                    fontSize: '13px', color: '#333', boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-
             </div>
 
             {selectedRakip && (
@@ -208,7 +191,6 @@ export default function Kart3TedaviUrun() {
               }}>
                 Rakip: <strong>{selectedRakip}</strong>
                 {selectedRakipEtken && ` — ${selectedRakipEtken}`}
-                {selectedRakipDoz && ` — ${selectedRakipDoz}`}
               </div>
             )}
           </div>

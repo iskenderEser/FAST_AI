@@ -4,24 +4,24 @@ import { useState, useEffect } from 'react';
 import { useFastCPR } from '../../context/FastCPRContext';
 
 const LEARNING_STYLES = [
-  { id: 'activist',   label: 'DEĞİŞİMCİ' },
-  { id: 'reflector',  label: 'YANSITICI' },
-  { id: 'theorist',   label: 'KURAMCI'   },
-  { id: 'pragmatist', label: 'UYGULAYICI' }
+  { id: 'activist',   label: 'ACTIVIST' },
+  { id: 'reflector',  label: 'REFLECTOR' },
+  { id: 'theorist',   label: 'THEORIST'   },
+  { id: 'pragmatist', label: 'PRAGMATIST' }
 ];
 
 const STYLE_TO_ID = {
-  Değişimci:  'activist',
-  Yansıtıcı:  'reflector',
-  Kuramcı:    'theorist',
-  Uygulamacı: 'pragmatist'
+  Activist:  'activist',
+  Reflector:  'reflector',
+  Theorist:    'theorist',
+  Pragmatist: 'pragmatist'
 };
 
 const STYLE_MAP = {
-  'CE+AE': 'Değişimci',
-  'CE+RO': 'Yansıtıcı',
-  'AC+RO': 'Kuramcı',
-  'AC+AE': 'Uygulamacı'
+  'CE+AE': 'Activist',
+  'CE+RO': 'Reflector',
+  'AC+RO': 'Theorist',
+  'AC+AE': 'Pragmatist'
 };
 
 function LSATestContent() {

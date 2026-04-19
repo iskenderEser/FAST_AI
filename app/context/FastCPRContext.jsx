@@ -46,7 +46,6 @@ export function FastCPRProvider({ children }) {
   // ─── Rakip ──────────────────────────────────────────────────────
   const [selectedRakip, setSelectedRakip]           = useState('');
   const [selectedRakipEtken, setSelectedRakipEtken] = useState('');
-  const [selectedRakipDoz, setSelectedRakipDoz]     = useState('');
 
   // ─── Öğrenme Stilleri ───────────────────────────────────────────
   const [learningStyles, setLearningStyles] = useState([]);
@@ -95,7 +94,6 @@ export function FastCPRProvider({ children }) {
       setSelectedProblem('');
       setSelectedRakip('');
       setSelectedRakipEtken('');
-      setSelectedRakipDoz('');
       setCprTexts({ activist: '', reflector: '', theorist: '', pragmatist: '' });
       setFeedbackId(null);
       return;
@@ -133,7 +131,6 @@ export function FastCPRProvider({ children }) {
       setSelectedProblem('');
       setSelectedRakip('');
       setSelectedRakipEtken('');
-      setSelectedRakipDoz('');
       setCprTexts({ activist: '', reflector: '', theorist: '', pragmatist: '' });
       setFeedbackId(null);
 
@@ -223,8 +220,6 @@ export function FastCPRProvider({ children }) {
     handleRakipChange,
     selectedRakipEtken,
     setSelectedRakipEtken,
-    selectedRakipDoz,
-    setSelectedRakipDoz,
 
     // Öğrenme Stili
     learningStyles,

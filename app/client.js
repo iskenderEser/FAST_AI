@@ -7,46 +7,6 @@ import MainContent from './components/MainContent';
 import AdminContent from './admin/AdminContent';
 
 // ============================================
-// GÜVENLİK KATI
-// ============================================
-function SecurityLayer() {
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') return;
-
-    document.addEventListener('contextmenu', e => e.preventDefault());
-
-    document.addEventListener('keydown', e => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
-        (e.ctrlKey && ['u', 's', 'p'].includes(e.key))
-      ) {
-        e.preventDefault();
-      }
-    });
-
-    document.addEventListener('copy', e => e.preventDefault());
-    document.addEventListener('cut',  e => e.preventDefault());
-
-    document.addEventListener('selectstart', e => {
-      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-      }
-    });
-
-    document.addEventListener('dragstart', e => e.preventDefault());
-
-    const style       = document.createElement('style');
-    style.textContent = `* { user-select: none !important; } input, textarea { user-select: text !important; }`;
-    document.head.appendChild(style);
-
-    console.log('✅ Güvenlik katmanı aktif!');
-  }, []);
-
-  return null;
-}
-
-// ============================================
 // EXTERNAL SCRIPT YÜKLEYİCİ
 // ============================================
 function ExternalScripts() {
@@ -105,7 +65,6 @@ function App() {
 export default function Root() {
   return (
     <AuthProvider>
-      <SecurityLayer />
       <ExternalScripts />
       <PWARegistration />
       <App />

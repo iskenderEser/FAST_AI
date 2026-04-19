@@ -8,10 +8,10 @@ import pdfFonts from 'pdfmake/build/vfs_fonts';
 pdfMake.vfs = pdfFonts.vfs;
 
 const STYLES = [
-  { id: 'activist',   title: 'Aktivist (Değişimci)',          badgeIcon: '🔥', badgeText: 'Yeni, deneyimsel, hızlı' },
-  { id: 'reflector',  title: 'Reflektör (Dikkatli Gözlemci)', badgeIcon: '👁️', badgeText: 'Önce gözlem, sonra karar' },
-  { id: 'theorist',   title: 'Teorist (Sistematik Düşünen)',   badgeIcon: '📐', badgeText: 'Kılavuz, mekanizma, sebep-sonuç' },
-  { id: 'pragmatist', title: 'Pragmatist (Uygulamacı)',        badgeIcon: '🛠️', badgeText: 'Pratik, uygulanabilir, "işe yarar mı?"' }
+  { id: 'activist',   title: 'Activist',          badgeIcon: '🔥', badgeText: 'Yeni, deneyimsel, hızlı' },
+  { id: 'reflector',  title: 'Reflektor', badgeIcon: '👁️', badgeText: 'Önce gözlem, sonra karar' },
+  { id: 'theorist',   title: 'Theorist',   badgeIcon: '📐', badgeText: 'Kılavuz, mekanizma, sebep-sonuç' },
+  { id: 'pragmatist', title: 'Pragmatist',        badgeIcon: '🛠️', badgeText: 'Pratik, uygulanabilir, "işe yarar mı?"' }
 ];
 
 const NEDENLER = [
@@ -27,10 +27,10 @@ const NEDENLER = [
 ];
 
 const STYLE_LABELS = {
-  activist:   'DEĞİŞİMCİ (Activist)',
-  reflector:  'YANSITICI (Reflector)',
-  theorist:   'KURAMCI (Theorist)',
-  pragmatist: 'UYGULAYICI (Pragmatist)',
+  activist:   'Activist',
+  reflector:  'Reflector',
+  theorist:   'Theorist',
+  pragmatist: 'Pragmatist',
 };
 
 function buildDocDefinition(pdf) {
