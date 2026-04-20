@@ -98,17 +98,17 @@ function TrendChart({ data }) {
   if (!data || !data.labels || !data.u || !data.a) return null;
   const maxU = Math.max(...data.u, 1);
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '72px', marginTop: '8px' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '80px', marginTop: '8px' }}>
       {data.labels.map((lbl, i) => {
         const hU = Math.round((data.u[i] / maxU) * 60);
         const hA = Math.round((data.a[i] / maxU) * 60);
         return (
-          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '60px' }}>
-              <div style={{ width: '45%', height: `${hU}px`, background: '#B5D4F4', borderRadius: '3px 3px 0 0' }} />
-              <div style={{ width: '45%', height: `${hA}px`, background: '#378ADD', borderRadius: '3px 3px 0 0' }} />
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '60px', width: '100%' }}>
+              <div style={{ flex: 1, height: `${hU}px`, background: '#B5D4F4', borderRadius: '3px 3px 0 0', minWidth: 0 }} />
+              <div style={{ flex: 1, height: `${hA}px`, background: '#378ADD', borderRadius: '3px 3px 0 0', minWidth: 0 }} />
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '4px', textAlign: 'center' }}>{lbl}</div>
+            <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '4px', textAlign: 'center', whiteSpace: 'nowrap' }}>{lbl}</div>
           </div>
         );
       })}
@@ -184,7 +184,6 @@ export default function Raporlar() {
 
   const icerik = (
     <>
-      {/* Filtre pilleri */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
         {FILTRELER.map(f => (
           <button

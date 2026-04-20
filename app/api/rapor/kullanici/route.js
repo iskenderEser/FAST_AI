@@ -1,68 +1,81 @@
 import { supabase } from '@/lib/supabase';
 
+function toTR(dateStr) {
+  const d = new Date(dateStr);
+  return new Date(d.getTime() + 3 * 60 * 60 * 1000);
+}
+
 function getDateRange(filtre) {
-  const now = new Date();
-  const bugun = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const now   = new Date();
+  const nowTR = toTR(now.toISOString());
+  const bugun = new Date(Date.UTC(nowTR.getUTCFullYear(), nowTR.getUTCMonth(), nowTR.getUTCDate()));
+
   let start, end, sub;
 
   switch (filtre) {
     case 'gunluk': {
       const dun = new Date(bugun);
-      dun.setDate(dun.getDate() - 1);
-      start = new Date(dun); start.setHours(0, 0, 0, 0);
-      end   = new Date(dun); end.setHours(23, 59, 59, 999);
+      dun.setUTCDate(dun.getUTCDate() - 1);
+      start = new Date(dun); start.setUTCHours(0, 0, 0, 0); start = new Date(start.getTime() - 3 * 60 * 60 * 1000);
+      end   = new Date(dun); end.setUTCHours(23, 59, 59, 999); end = new Date(end.getTime() - 3 * 60 * 60 * 1000);
       sub   = 'dün';
       break;
     }
     case 'haftalik': {
       const dun = new Date(bugun);
-      dun.setDate(dun.getDate() - 1);
-      const gun = dun.getDay();
+      dun.setUTCDate(dun.getUTCDate() - 1);
+      const gun  = dun.getUTCDay();
       const fark = gun === 0 ? 6 : gun - 1;
       start = new Date(dun);
-      start.setDate(dun.getDate() - fark);
-      start.setHours(0, 0, 0, 0);
-      end = new Date(dun); end.setHours(23, 59, 59, 999);
-      sub = 'bu hafta';
+      start.setUTCDate(dun.getUTCDate() - fark);
+      start.setUTCHours(0, 0, 0, 0);
+      start = new Date(start.getTime() - 3 * 60 * 60 * 1000);
+      end   = new Date(dun); end.setUTCHours(23, 59, 59, 999); end = new Date(end.getTime() - 3 * 60 * 60 * 1000);
+      sub   = 'bu hafta';
       break;
     }
     case 'aylik': {
       const dun = new Date(bugun);
-      dun.setDate(dun.getDate() - 1);
-      start = new Date(dun.getFullYear(), dun.getMonth(), 1, 0, 0, 0, 0);
-      end   = new Date(dun); end.setHours(23, 59, 59, 999);
+      dun.setUTCDate(dun.getUTCDate() - 1);
+      start = new Date(Date.UTC(dun.getUTCFullYear(), dun.getUTCMonth(), 1, 0, 0, 0, 0));
+      start = new Date(start.getTime() - 3 * 60 * 60 * 1000);
+      end   = new Date(dun); end.setUTCHours(23, 59, 59, 999); end = new Date(end.getTime() - 3 * 60 * 60 * 1000);
       sub   = 'bu ay';
       break;
     }
     case '3aylik': {
-      const mevcutDonem = Math.floor(now.getMonth() / 3);
+      const mevcutDonem = Math.floor(nowTR.getUTCMonth() / 3);
       if (mevcutDonem === 0) {
-        start = new Date(now.getFullYear() - 1, 9, 1, 0, 0, 0, 0);
-        end   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        start = new Date(Date.UTC(nowTR.getUTCFullYear() - 1, 9, 1, 0, 0, 0, 0));
+        end   = new Date(Date.UTC(nowTR.getUTCFullYear() - 1, 11, 31, 23, 59, 59, 999));
       } else {
-        start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-        end   = new Date(now.getFullYear(), mevcutDonem * 3, 0, 23, 59, 59, 999);
+        start = new Date(Date.UTC(nowTR.getUTCFullYear(), 0, 1, 0, 0, 0, 0));
+        end   = new Date(Date.UTC(nowTR.getUTCFullYear(), mevcutDonem * 3, 0, 23, 59, 59, 999));
       }
-      sub = 'son dönemler';
+      start = new Date(start.getTime() - 3 * 60 * 60 * 1000);
+      end   = new Date(end.getTime() - 3 * 60 * 60 * 1000);
+      sub   = 'son dönemler';
       break;
     }
     case 'yillik': {
-      const oncekiAy = now.getMonth() - 1;
+      const oncekiAy = nowTR.getUTCMonth() - 1;
       if (oncekiAy < 0) {
-        start = new Date(now.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
-        end   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        start = new Date(Date.UTC(nowTR.getUTCFullYear() - 1, 0, 1, 0, 0, 0, 0));
+        end   = new Date(Date.UTC(nowTR.getUTCFullYear() - 1, 11, 31, 23, 59, 59, 999));
       } else {
-        start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-        end   = new Date(now.getFullYear(), oncekiAy + 1, 0, 23, 59, 59, 999);
+        start = new Date(Date.UTC(nowTR.getUTCFullYear(), 0, 1, 0, 0, 0, 0));
+        end   = new Date(Date.UTC(nowTR.getUTCFullYear(), oncekiAy + 1, 0, 23, 59, 59, 999));
       }
-      sub = 'bu yıl';
+      start = new Date(start.getTime() - 3 * 60 * 60 * 1000);
+      end   = new Date(end.getTime() - 3 * 60 * 60 * 1000);
+      sub   = 'bu yıl';
       break;
     }
     default: {
       const dun = new Date(bugun);
-      dun.setDate(dun.getDate() - 1);
-      start = new Date(dun); start.setHours(0, 0, 0, 0);
-      end   = new Date(dun); end.setHours(23, 59, 59, 999);
+      dun.setUTCDate(dun.getUTCDate() - 1);
+      start = new Date(dun); start.setUTCHours(0, 0, 0, 0); start = new Date(start.getTime() - 3 * 60 * 60 * 1000);
+      end   = new Date(dun); end.setUTCHours(23, 59, 59, 999); end = new Date(end.getTime() - 3 * 60 * 60 * 1000);
       sub   = 'dün';
     }
   }
@@ -71,8 +84,9 @@ function getDateRange(filtre) {
 }
 
 function getTrendLabels(filtre) {
-  const now = new Date();
-  const bugun = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const now   = new Date();
+  const nowTR = toTR(now.toISOString());
+  const bugun = new Date(Date.UTC(nowTR.getUTCFullYear(), nowTR.getUTCMonth(), nowTR.getUTCDate()));
 
   switch (filtre) {
     case 'gunluk':
@@ -80,32 +94,31 @@ function getTrendLabels(filtre) {
 
     case 'haftalik': {
       const dun = new Date(bugun);
-      dun.setDate(dun.getDate() - 1);
-      const gunSirasi = dun.getDay() === 0 ? 6 : dun.getDay() - 1;
-      const tumGunler = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
-      return tumGunler.slice(0, gunSirasi + 1);
+      dun.setUTCDate(dun.getUTCDate() - 1);
+      const gunSirasi = dun.getUTCDay() === 0 ? 6 : dun.getUTCDay() - 1;
+      return ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].slice(0, gunSirasi + 1);
     }
 
     case 'aylik': {
       const dun = new Date(bugun);
-      dun.setDate(dun.getDate() - 1);
-      const haftaSayisi = Math.ceil(dun.getDate() / 7);
+      dun.setUTCDate(dun.getUTCDate() - 1);
+      const haftaSayisi = Math.ceil(dun.getUTCDate() / 7);
       const labels = [];
       for (let i = 1; i <= haftaSayisi; i++) labels.push(`Hf${i}`);
       return labels;
     }
 
     case '3aylik': {
-      const mevcutDonem = Math.floor(now.getMonth() / 3);
+      const mevcutDonem = Math.floor(nowTR.getUTCMonth() / 3);
       if (mevcutDonem === 0) return ['4. Dönem'];
       const labels = [];
-      for (let i = 0; i < mevcutDonem; i++) labels.push(`${i+1}. Dönem`);
+      for (let i = 0; i < mevcutDonem; i++) labels.push(`${i + 1}. Dönem`);
       return labels;
     }
 
     case 'yillik': {
       const tumAylar = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-      const oncekiAy = now.getMonth() - 1;
+      const oncekiAy = nowTR.getUTCMonth() - 1;
       if (oncekiAy < 0) return tumAylar;
       return tumAylar.slice(0, oncekiAy + 1);
     }
@@ -116,29 +129,30 @@ function getTrendLabels(filtre) {
 }
 
 function getTrendKey(filtre, dateStr) {
-  const d = new Date(dateStr);
+  const trDate = toTR(dateStr);
+
   switch (filtre) {
     case 'gunluk': {
-      const h = d.getHours();
+      const h    = trDate.getUTCHours();
       const slot = Math.floor(h / 2) * 2;
-      return `${String(slot).padStart(2,'0')}:00`;
+      return `${String(slot).padStart(2, '0')}:00`;
     }
     case 'haftalik':
-      return ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'][d.getDay() === 0 ? 6 : d.getDay() - 1];
+      return ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'][trDate.getUTCDay() === 0 ? 6 : trDate.getUTCDay() - 1];
     case 'aylik':
-      return `Hf${Math.ceil(d.getDate() / 7)}`;
+      return `Hf${Math.ceil(trDate.getUTCDate() / 7)}`;
     case '3aylik':
-      return `${Math.floor(d.getMonth() / 3) + 1}. Dönem`;
+      return `${Math.floor(trDate.getUTCMonth() / 3) + 1}. Dönem`;
     case 'yillik':
-      return ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][d.getMonth()];
+      return ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][trDate.getUTCMonth()];
     default:
-      return ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'][d.getDay() === 0 ? 6 : d.getDay() - 1];
+      return ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'][trDate.getUTCDay() === 0 ? 6 : trDate.getUTCDay() - 1];
   }
 }
 
 function buildTrend(filtre, feedbacks) {
   const labels = getTrendLabels(filtre);
-  const map = {};
+  const map    = {};
   labels.forEach(l => { map[l] = { u: 0, a: 0 }; });
   feedbacks.forEach(fb => {
     const key = getTrendKey(filtre, fb.created_at);
@@ -172,9 +186,7 @@ function buildNedenler(feedbacks) {
   const map = {};
   feedbacks
     .filter(fb => !fb.arsivlendi && fb.nedenler)
-    .forEach(fb => {
-      fb.nedenler.forEach(n => { map[n] = (map[n] || 0) + 1; });
-    });
+    .forEach(fb => { fb.nedenler.forEach(n => { map[n] = (map[n] || 0) + 1; }); });
 
   const toplamSys = SYS_KEYS.reduce((s, k) => s + (map[k] || 0), 0);
   const toplamUsr = USR_KEYS.reduce((s, k) => s + (map[k] || 0), 0);
@@ -205,7 +217,7 @@ export async function GET(request) {
       .lte('created_at', end);
     if (fbError) throw fbError;
 
-    const fb = feedbacks || [];
+    const fb         = feedbacks || [];
     const uretilen   = fb.length;
     const arsivlenen = fb.filter(f => f.arsivlendi).length;
 
