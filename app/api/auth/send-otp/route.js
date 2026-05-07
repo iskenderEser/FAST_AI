@@ -62,12 +62,60 @@ function hashPhone(phone) {
 }
 
 async function sendSMS(phone, code) {
-  const response = await fetch('https://deneme-fast.vercel.app/api/send-otp', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, code })
-  })
-  if (!response.ok) {
-    throw new Error('SMS gönderilemedi')
+  const API_USER     = process.env.ILETISIM_USER
+  const API_PASS     = process.env.ILETISIM_PASS
+  const API_CUSTOMER = process.env.ILETISIM_CUSTOMER
+  const API_KEY      = process.env.ILETISIM_API_KEY
+  const API_VENDOR   = process.env.ILETISIM_VENDOR
+  const SERVICE_ID   = process.env.ILETISIM_SERVICE_ID
+
+  // ADIM 1: Token al
+  const authUrl = new URL('https://live.iletisimmakinesi.com/api/UserGatewayWS/functions/authenticate')
+  authUrl.searchParams.append('userName',     API_USER)
+  authUrl.searchParams.append('userPass',     API_PASS)
+  authUrl.searchParams.append('customerCode', API_CUSTOMER)
+  authUrl.searchParams.append('apiKey',       API_KEY)
+  authUrl.searchParams.append('vendorCode',   API_VENDOR)
+
+  const authResponse = await fetch(authUrl.toString())
+  const authXml      = await authResponse.text()
+
+  const tokenMatch = authXml.match(/<TOKEN_NO>(.*?)<\/TOKEN_NO>/)
+  if (!tokenMatch) {
+    throw new Error('Token alınamadı: ' + authXml.substring(0, 500))
+  }
+  const token = tokenMatch[1]
+
+  // ADIM 2: Originator ID al
+  const origUrl = new URL('https://live.iletisimmakinesi.com/api/UserGatewayWS/functions/getOriginators')
+  origUrl.searchParams.append('token',     token)
+  origUrl.searchParams.append('serviceId', SERVICE_ID)
+
+  const origResponse = await fetch(origUrl.toString())
+  const origXml      = await origResponse.text()
+
+  const origMatch = origXml.match(/<ORIGINATOR id="(\d+)"/)
+  if (!origMatch) {
+    throw new Error('Originator ID alınamadı: ' + origXml.substring(0, 500))
+  }
+  const originatorId = origMatch[1]
+
+  // ADIM 3: SMS gönder
+  const messageText = `FAST AI Dogrulama Kodunuz: ${code}\n\nKod 5 dakika gecerlidir. Kimseyle paylasmayiniz.`
+
+  const smsUrl = new URL('https://live.iletisimmakinesi.com/api/SingleShotWS/functions/sendSingleShotSMS')
+  smsUrl.searchParams.append('token',       token)
+  smsUrl.searchParams.append('originatorId', originatorId)
+  smsUrl.searchParams.append('phoneNumber', '90' + phone.substring(1))
+  smsUrl.searchParams.append('messageText', messageText)
+
+  const smsResponse = await fetch(smsUrl.toString())
+  const smsXml      = await smsResponse.text()
+
+  const statusMatch = smsXml.match(/<CODE>(.*?)<\/CODE>/)
+  const statusCode  = statusMatch ? statusMatch[1] : 'UNKNOWN'
+
+  if (statusCode !== '0') {
+    throw new Error('SMS gönderilemedi. Kod: ' + statusCode)
   }
 }
