@@ -2119,6 +2119,8 @@ body {
   width: 100%;
   resize: none;
   overflow: hidden;
+  field-sizing: content;
+  min-height: 120px;
 }
 
 .warning-banner {
