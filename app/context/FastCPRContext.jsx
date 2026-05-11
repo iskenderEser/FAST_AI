@@ -25,9 +25,15 @@ export function FastCPRProvider({ children }) {
   // ─── Claim Listesi ──────────────────────────────────────────────
   const [claims, setClaims] = useState([]);
 
+  // ─── Problem Listesi ────────────────────────────────────────────
+  const [problems, setProblems] = useState([]);
+
   // ─── Seçili Claim ───────────────────────────────────────────────
   const [selectedClaim, setSelectedClaim]         = useState('');
   const [selectedClaimText, setSelectedClaimText] = useState('');
+
+  // ─── Seçili Problem ─────────────────────────────────────────────
+  const [selectedProblem, setSelectedProblem] = useState('');
 
   // ─── Rakip ──────────────────────────────────────────────────────
   const [selectedRakip, setSelectedRakip]           = useState('');
@@ -69,7 +75,7 @@ export function FastCPRProvider({ children }) {
   }, [currentUser]);
 
   // ────────────────────────────────────────────────────────────────
-  // Ürün seçilince detay + claim listesini çek
+  // Ürün seçilince detay + claim + problem listesini çek
   // ────────────────────────────────────────────────────────────────
   async function handleUrunSelect(urunId) {
     if (!urunId) {
@@ -78,8 +84,10 @@ export function FastCPRProvider({ children }) {
       setPosologyOptions([]);
       setPosology('');
       setClaims([]);
+      setProblems([]);
       setSelectedClaim('');
       setSelectedClaimText('');
+      setSelectedProblem('');
       setSelectedRakip('');
       setSelectedRakipEtken('');
       setCprTexts({ activist: '', reflector: '', theorist: '', pragmatist: '' });
@@ -101,12 +109,14 @@ export function FastCPRProvider({ children }) {
         const contentRes  = await fetch(`/api/cpr/get-content?atc=${u.atc_kodu}`);
         const contentData = await contentRes.json();
         if (contentData.success) {
-          setClaims(contentData.claims || []);
+          setClaims(contentData.claims   || []);
+          setProblems(contentData.problems || []);
         }
       }
 
       setSelectedClaim('');
       setSelectedClaimText('');
+      setSelectedProblem('');
       setSelectedRakip('');
       setSelectedRakipEtken('');
       setCprTexts({ activist: '', reflector: '', theorist: '', pragmatist: '' });
@@ -118,11 +128,18 @@ export function FastCPRProvider({ children }) {
   }
 
   // ────────────────────────────────────────────────────────────────
-  // Claim seçilince
+  // Claim seçilince — eşleşen problem'i de bul
   // ────────────────────────────────────────────────────────────────
   function handleClaimChange(claimText) {
     setSelectedClaim(claimText);
     setSelectedClaimText(claimText);
+
+    const claimIndex = claims.findIndex(c => c.claim === claimText);
+    if (claimIndex !== -1 && problems[claimIndex]) {
+      setSelectedProblem(problems[claimIndex].problem);
+    } else {
+      setSelectedProblem('');
+    }
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -187,6 +204,10 @@ export function FastCPRProvider({ children }) {
     selectedClaim,
     selectedClaimText,
     handleClaimChange,
+
+    // Problem
+    problems,
+    selectedProblem,
 
     // Rakip
     selectedRakip,

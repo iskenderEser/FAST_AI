@@ -12,6 +12,7 @@ export function useStyleCPR() {
     learningStyles,
     selectedUrun,
     selectedClaimText,
+    selectedProblem,
     usageType,
     posology,
     selectedRakip,
@@ -90,7 +91,9 @@ export function useStyleCPR() {
           urun_id: selectedUrun?.id,
           stil: styleId,
           urun: selectedUrun.urun_adi,
+          ozellikler: selectedUrun.ozellikler,
           claim: selectedClaimText,
+          problem: selectedProblem || selectedClaimText,
           kullanim_sekli: usageType,
           pozoloji: posology,
           rakip: selectedRakip,
@@ -112,7 +115,7 @@ export function useStyleCPR() {
     } finally {
       setLoading(prev => ({ ...prev, [styleId]: false }));
     }
-  }, [kartAcik, currentUser, selectedUrun, selectedClaimText, usageType, posology, selectedRakip, selectedRakipEtken, setCprTexts, setFeedbackId, tetikle]);
+  }, [kartAcik, currentUser, selectedUrun, selectedClaimText, selectedProblem, usageType, posology, selectedRakip, selectedRakipEtken, setCprTexts, setFeedbackId, tetikle]);
 
   const handleSaveAndDownload = useCallback(async () => {
     if (!selectedUrun) {
