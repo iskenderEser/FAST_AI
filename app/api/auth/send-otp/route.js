@@ -104,10 +104,10 @@ async function sendSMS(phone, code) {
   const messageText = `FAST AI Dogrulama Kodunuz: ${code}\n\nKod 5 dakika gecerlidir. Kimseyle paylasmayiniz.`
 
   const smsUrl = new URL('https://live.iletisimmakinesi.com/api/SingleShotWS/functions/sendSingleShotSMS')
-  smsUrl.searchParams.append('token',       token)
+  smsUrl.searchParams.append('token',        token)
   smsUrl.searchParams.append('originatorId', originatorId)
-  smsUrl.searchParams.append('phoneNumber', '90' + phone.substring(1))
-  smsUrl.searchParams.append('messageText', messageText)
+  smsUrl.searchParams.append('phoneNumber',  '90' + phone.substring(1))
+  smsUrl.searchParams.append('messageText',  messageText)
 
   const smsResponse = await fetch(smsUrl.toString())
   const smsXml      = await smsResponse.text()

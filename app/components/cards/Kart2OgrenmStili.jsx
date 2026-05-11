@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useFastCPR } from '../../context/FastCPRContext';
+import { Button } from '../ui/Button';
+import { Accordion } from '../ui/Accordion';
+import { Pill } from '../ui/Pill';
 
 const LEARNING_STYLES = [
-  { id: 'activist',   label: 'ACTIVIST' },
-  { id: 'reflector',  label: 'REFLECTOR' },
+  { id: 'activist',   label: 'ACTIVIST'   },
+  { id: 'reflector',  label: 'REFLECTOR'  },
   { id: 'theorist',   label: 'THEORIST'   },
   { id: 'pragmatist', label: 'PRAGMATIST' }
 ];
 
 const STYLE_TO_ID = {
-  Activist:  'activist',
+  Activist:   'activist',
   Reflector:  'reflector',
-  Theorist:    'theorist',
+  Theorist:   'theorist',
   Pragmatist: 'pragmatist'
 };
 
@@ -23,6 +26,79 @@ const STYLE_MAP = {
   'AC+RO': 'Theorist',
   'AC+AE': 'Pragmatist'
 };
+
+// ============================================
+// SELECTABLE OPTION CARD
+// ============================================
+
+function SelectableOptionCard({ question, isSelected, onClick, isEven }) {
+  const cardClass = [
+    'kart2__option',
+    isSelected ? 'kart2__option--selected' : '',
+    isEven ? 'kart2__option--even' : 'kart2__option--odd'
+  ].filter(Boolean).join(' ');
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  }
+
+  return (
+    <div
+      className={cardClass}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+    >
+      <div className={isSelected ? 'kart2__checkbox kart2__checkbox--selected' : 'kart2__checkbox'}>
+        {isSelected && (
+          <svg aria-hidden="true" width="9" height="7" viewBox="0 0 9 7" fill="none">
+            <path d="M1 3.5L3.5 6L8 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+      <span className={isSelected ? 'kart2__option-text kart2__option-text--selected' : 'kart2__option-text'}>
+        {question.soru}
+      </span>
+    </div>
+  );
+}
+
+// ============================================
+// WARNING MESSAGE
+// ============================================
+
+function WarningMessage({ message }) {
+  if (!message) return null;
+  return <div className="kart2__warning">⚠️ {message}</div>;
+}
+
+// ============================================
+// SORU LİSTESİ
+// ============================================
+
+function QuestionList({ questions, selections, onCheck }) {
+  return (
+    <div className="kart2__list">
+      {questions.map((q, i) => (
+        <SelectableOptionCard
+          key={q.sira}
+          question={q}
+          isSelected={!!selections[q.sira]}
+          onClick={() => onCheck(q.sira)}
+          isEven={i % 2 === 0}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ============================================
+// LSA TEST CONTENT (logic DEĞİŞMEDİ)
+// ============================================
 
 function LSATestContent() {
   const { handleLSAStyleCalculated } = useFastCPR();
@@ -73,7 +149,8 @@ function LSATestContent() {
     const isl = scores.AE > scores.RO ? 'AE' : scores.RO > scores.AE ? 'RO' : null;
 
     if (alg && isl) {
-      const stil = STYLE_MAP[alg + '+' + isl];
+      const styleKey = `${alg}+${isl}`;
+      const stil = STYLE_MAP[styleKey];
       if (stil) handleLSAStyleCalculated(stil, STYLE_TO_ID);
     }
   }
@@ -84,173 +161,90 @@ function LSATestContent() {
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+      <div className="kart2__loading">
         ⏳ Yükleniyor...
       </div>
     );
   }
 
   return (
-    <div>
-      <details className="acc" open={acc1Open} onToggle={e => setAcc1Open(e.target.open)}
-        style={{ marginBottom: '12px' }}>
-        <summary>
-          <div className="accTitle">
-            <b><span className="arrow">▶</span> Bilgiyi Nasıl Algılıyor?</b>
-          </div>
-          <div className="accMeta">
-            <span style={{ fontSize: '12px', color: '#666' }}>
-              {getCount(algılama)} / {algılama.length}
-            </span>
-          </div>
-        </summary>
-        <div className="accBody">
-          {algılama.map(q => (
-            <div key={q.sira}
-              onClick={() => handleCheck(q.sira)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 14px', borderRadius: '8px', marginBottom: '8px',
-                border: selections[q.sira] ? '1px solid #003cbb' : '0.5px solid var(--border)',
-                background: selections[q.sira] ? '#eef2ff' : 'white',
-                cursor: 'pointer', userSelect: 'none'
-              }}>
-              <div style={{
-                width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0,
-                border: selections[q.sira] ? 'none' : '1.5px solid #ccc',
-                background: selections[q.sira] ? '#003cbb' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {selections[q.sira] && (
-                  <div style={{
-                    width: '10px', height: '7px',
-                    borderLeft: '2px solid white', borderBottom: '2px solid white',
-                    transform: 'rotate(-45deg) translateY(-1px)'
-                  }} />
-                )}
-              </div>
-              <span style={{
-                fontSize: '13px', lineHeight: '1.5',
-                color: selections[q.sira] ? '#003cbb' : 'var(--text)'
-              }}>
-                {q.soru}
-              </span>
-            </div>
-          ))}
-          {uyari1 && (
-            <div style={{
-              marginTop: '10px', padding: '10px 14px', borderRadius: '8px',
-              borderLeft: '3px solid #f59e0b', background: '#fffbeb',
-              fontSize: '13px', color: '#92400e', lineHeight: '1.5'
-            }}>
-              Eşit sayıda seçim yapıldı. Lütfen öğrenme stilini aşağıdan manuel olarak seçin.
-            </div>
-          )}
-        </div>
-      </details>
+    <div className="kart2__content">
+      <Accordion
+        title="Bilgiyi Nasıl Algılıyor?"
+        counter={`${getCount(algılama)} / ${algılama.length}`}
+        defaultOpen={acc1Open}
+        onToggle={(open) => setAcc1Open(open)}
+      >
+        <QuestionList
+          questions={algılama}
+          selections={selections}
+          onCheck={handleCheck}
+        />
+        <WarningMessage message={uyari1 && "Eşit sayıda seçim yapıldı. Lütfen öğrenme stilini aşağıdan manuel olarak seçin."} />
+      </Accordion>
 
-      <details className="acc" open={acc2Open} onToggle={e => setAcc2Open(e.target.open)}>
-        <summary>
-          <div className="accTitle">
-            <b><span className="arrow">▶</span> Bilgiyi Nasıl İşliyor?</b>
-          </div>
-          <div className="accMeta">
-            <span style={{ fontSize: '12px', color: '#666' }}>
-              {getCount(isleme)} / {isleme.length}
-            </span>
-          </div>
-        </summary>
-        <div className="accBody">
-          {isleme.map(q => (
-            <div key={q.sira}
-              onClick={() => handleCheck(q.sira)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 14px', borderRadius: '8px', marginBottom: '8px',
-                border: selections[q.sira] ? '1px solid #003cbb' : '0.5px solid var(--border)',
-                background: selections[q.sira] ? '#eef2ff' : 'white',
-                cursor: 'pointer', userSelect: 'none'
-              }}>
-              <div style={{
-                width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0,
-                border: selections[q.sira] ? 'none' : '1.5px solid #ccc',
-                background: selections[q.sira] ? '#003cbb' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {selections[q.sira] && (
-                  <div style={{
-                    width: '10px', height: '7px',
-                    borderLeft: '2px solid white', borderBottom: '2px solid white',
-                    transform: 'rotate(-45deg) translateY(-1px)'
-                  }} />
-                )}
-              </div>
-              <span style={{
-                fontSize: '13px', lineHeight: '1.5',
-                color: selections[q.sira] ? '#003cbb' : 'var(--text)'
-              }}>
-                {q.soru}
-              </span>
-            </div>
-          ))}
-          {uyari2 && (
-            <div style={{
-              marginTop: '10px', padding: '10px 14px', borderRadius: '8px',
-              borderLeft: '3px solid #f59e0b', background: '#fffbeb',
-              fontSize: '13px', color: '#92400e', lineHeight: '1.5'
-            }}>
-              Eşit sayıda seçim yapıldı. Lütfen öğrenme stilini aşağıdan manuel olarak seçin.
-            </div>
-          )}
-        </div>
-      </details>
+      <Accordion
+        title="Bilgiyi Nasıl İşliyor?"
+        counter={`${getCount(isleme)} / ${isleme.length}`}
+        defaultOpen={acc2Open}
+        onToggle={(open) => setAcc2Open(open)}
+      >
+        <QuestionList
+          questions={isleme}
+          selections={selections}
+          onCheck={handleCheck}
+        />
+        <WarningMessage message={uyari2 && "Eşit sayıda seçim yapıldı. Lütfen öğrenme stilini aşağıdan manuel olarak seçin."} />
+      </Accordion>
     </div>
   );
 }
+
+// ============================================
+// MAIN EXPORT
+// ============================================
 
 export default function Kart2OgrenmStili() {
   const { learningStyles, handleLearningStyleToggle, handleToggleAll } = useFastCPR();
   const allSelected = learningStyles.length === LEARNING_STYLES.length;
 
   return (
-    <details className="acc" id="acc_learning" style={{ marginBottom: '12px' }}>
-      <summary>
-        <div className="accTitle">
-          <b><span className="arrow">▶</span> Öğrenme Stili</b>
-          <span>Doktorun öğrenme stilini belirle</span>
-        </div>
-        <div className="accMeta">
-          {learningStyles.length > 0 && (
-            <span style={{
-              fontSize: '11px', padding: '3px 10px', borderRadius: '10px',
-              background: '#eaf3de', color: '#3b6d11'
-            }}>
-              {learningStyles.length} stil seçildi
-            </span>
-          )}
-        </div>
-      </summary>
-      <div className="accBody">
+    <Accordion
+      title="Öğrenme Stili"
+      subtitle="Doktorun öğrenme stilini belirle"
+      defaultOpen={true}
+      counterBadge={learningStyles.length > 0 ? `${learningStyles.length} stil seçildi` : null}
+    >
+      <div className="kart2">
         <LSATestContent />
-        <div className="fieldRow" style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-          <label>Öğrenme Stilini Seçiniz <span style={{ fontWeight: 300, fontStyle: 'italic' }}>(zorunludur)</span></label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <div className="learning-style-pills" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+
+        <div className="kart2__override">
+          <div className="kart2__override-label">
+            Öğrenme Stilini Seçiniz <span className="kart2__required">(zorunludur)</span>
+          </div>
+          <div className="kart2__controls">
+            <div className="kart2__pills">
               {LEARNING_STYLES.map(s => (
-                <button key={s.id} type="button"
-                  className={`learning-style-pill${learningStyles.includes(s.id) ? ' selected' : ''}`}
-                  onClick={() => handleLearningStyleToggle(s.id)}>
+                <Pill
+                  key={s.id}
+                  variant="learning"
+                  selected={learningStyles.includes(s.id)}
+                  onClick={() => handleLearningStyleToggle(s.id)}
+                >
                   {s.label}
-                </button>
+                </Pill>
               ))}
             </div>
-            <button className="btn small ghost" type="button"
-              onClick={() => handleToggleAll(LEARNING_STYLES)}>
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={() => handleToggleAll(LEARNING_STYLES)}
+            >
               {allSelected ? 'Seçimi Kaldır' : 'Hepsini Seç'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
-    </details>
+    </Accordion>
   );
 }

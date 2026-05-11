@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FastCPRProvider } from '../context/FastCPRContext';
+import { Button } from './ui/Button';
+import { Modal } from './ui/Modal';
 import S4Survey from './S4Survey';
 import PDFStock from './PDFStock';
 import Raporlar from '../admin/Raporlar';
@@ -10,6 +12,103 @@ import Kart1KonforAlani from './cards/Kart1KonforAlani';
 import Kart2OgrenmStili from './cards/Kart2OgrenmStili';
 import Kart3TedaviUrun from './cards/Kart3TedaviUrun';
 import Kart5StilCPR from './cards/Kart5StilCPR';
+
+// ============================================
+// PROFILE DROPDOWN COMPONENT
+// ============================================
+
+function ProfileDropdown({ isOpen, onClose, userName, firmName, onOpenS4Modal }) {
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div className="dropdown-overlay" onClick={onClose} />
+      <div className="profile-dropdown">
+        <div className="profile-dropdown-header">
+          <div className="profile-dropdown-name">{userName || 'Kullanıcı'}</div>
+          <div className="profile-dropdown-firm">{firmName}</div>
+        </div>
+        <div className="profile-dropdown-item" onClick={onOpenS4Modal}>
+          <span>Sosyal Stil Testi</span>
+          <span className="profile-dropdown-arrow">→</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ============================================
+// HEADER COMPONENT
+// ============================================
+
+function Header({ initials, userName, firmName, onProfileToggle, onLogout, profilDropdownOpen, onCloseDropdown, onOpenS4Modal }) {
+  return (
+    <div className="main-header">
+      <div>
+        <div className="logo">🧠 FAST AI</div>
+        <div className="logo-subtitle">Tanıtımın Verimliliğini Destekler</div>
+      </div>
+      <div className="header-actions">
+        <button className="profile-button" onClick={onProfileToggle}>
+          <div className="profile-avatar">{initials}</div>
+          <span>Profilim</span>
+          <span className="dropdown-arrow">▾</span>
+        </button>
+        <Button variant="ghost" size="small" onClick={onLogout}>
+          Çıkış
+        </Button>
+        <ProfileDropdown
+          isOpen={profilDropdownOpen}
+          onClose={onCloseDropdown}
+          userName={userName}
+          firmName={firmName}
+          onOpenS4Modal={onOpenS4Modal}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// TOOLBAR COMPONENT
+// ============================================
+
+function Toolbar({ onToggleRaporlar, raporlarAcik }) {
+  return (
+    <div className="main-toolbar">
+      <PDFStock />
+      <Button
+        variant={raporlarAcik ? 'primary' : 'ghost'}
+        size="small"
+        onClick={onToggleRaporlar}
+      >
+        <span>📊</span>
+        <span>{raporlarAcik ? 'CPR Üret' : 'Raporlar'}</span>
+      </Button>
+    </div>
+  );
+}
+
+// ============================================
+// S4 MODAL CONTENT
+// ============================================
+
+function S4ModalContent({ socialStyle, onStyleCalculated, onClose }) {
+  return (
+    <div className="s4-modal-content">
+      {socialStyle && (
+        <div className="s4-current-style">
+          Mevcut stil: <strong>{socialStyle}</strong>
+        </div>
+      )}
+      <S4Survey onStyleCalculated={onStyleCalculated} />
+    </div>
+  );
+}
+
+// ============================================
+// MAIN CONTENT
+// ============================================
 
 export default function MainContent() {
   const { currentUser, logout } = useAuth();
@@ -29,115 +128,41 @@ export default function MainContent() {
     ? kullaniciAd.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : 'KU';
 
+  const handleS4StyleCalculated = (style) => {
+    setSocialStyle(style);
+    setS4ModalOpen(false);
+  };
+
   return (
     <FastCPRProvider>
-      <div id="mainContent" className="visible">
+      <div id="mainContent">
+        <Header
+          initials={initials}
+          userName={kullaniciAd}
+          firmName={firmaAd}
+          onProfileToggle={() => setProfilDropdownOpen(prev => !prev)}
+          onLogout={handleLogout}
+          profilDropdownOpen={profilDropdownOpen}
+          onCloseDropdown={() => setProfilDropdownOpen(false)}
+          onOpenS4Modal={() => {
+            setProfilDropdownOpen(false);
+            setS4ModalOpen(true);
+          }}
+        />
 
-        {/* HEADER */}
-        <div style={{
-          background: 'white', borderBottom: '0.5px solid var(--border)',
-          padding: '10px 24px', display: 'flex', justifyContent: 'space-between',
-          alignItems: 'center', position: 'sticky', top: 0, zIndex: 100
-        }}>
-          <div>
-            <div style={{ fontSize: '18px', fontWeight: 600, color: '#e30a17' }}>
-              🧠 FAST AI
-            </div>
-            <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-              Tanıtımın Verimliliğini Destekler
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
-            <button
-              onClick={() => setProfilDropdownOpen(prev => !prev)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '7px 14px', borderRadius: '8px',
-                border: '0.5px solid var(--border)',
-                background: 'white', cursor: 'pointer', fontSize: '13px'
-              }}>
-              <div style={{
-                width: '24px', height: '24px', borderRadius: '50%',
-                background: '#003cbb', color: 'white',
-                fontSize: '10px', fontWeight: 600,
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {initials}
-              </div>
-              <span>Profilim</span>
-              <span style={{ fontSize: '10px', color: '#888' }}>▾</span>
-            </button>
+        <Toolbar
+          onToggleRaporlar={() => setRaporlarAcik(prev => !prev)}
+          raporlarAcik={raporlarAcik}
+        />
 
-            {profilDropdownOpen && (
-              <>
-                <div onClick={() => setProfilDropdownOpen(false)}
-                  style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
-                <div style={{
-                  position: 'absolute', top: '42px', right: 0, zIndex: 100,
-                  background: 'white', borderRadius: '10px',
-                  border: '0.5px solid var(--border)',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
-                  minWidth: '220px', overflow: 'hidden'
-                }}>
-                  <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--border)' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500 }}>{kullaniciAd || 'Kullanıcı'}</div>
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{firmaAd}</div>
-                  </div>
-                  <div
-                    onClick={() => { setProfilDropdownOpen(false); setS4ModalOpen(true); }}
-                    style={{
-                      padding: '10px 16px', fontSize: '13px', color: '#003cbb',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                    }}>
-                    <span>Sosyal Stil Testi</span>
-                    <span style={{ fontSize: '11px' }}>→</span>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <button onClick={handleLogout} style={{
-              padding: '7px 14px', borderRadius: '8px',
-              border: '0.5px solid var(--border)',
-              background: 'transparent', cursor: 'pointer',
-              fontSize: '13px', color: '#666'
-            }}>
-              Çıkış
-            </button>
-          </div>
-        </div>
-
-        {/* TOOLBAR */}
-        <div style={{
-          padding: '10px 24px', display: 'flex', gap: '10px',
-          background: 'white', borderBottom: '0.5px solid var(--border)'
-        }}>
-          <PDFStock />
-          <button
-            onClick={() => setRaporlarAcik(prev => !prev)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '7px 14px', borderRadius: '8px',
-              border: '0.5px solid var(--border)',
-              background: raporlarAcik ? '#003cbb' : 'transparent',
-              color: raporlarAcik ? 'white' : '#666',
-              cursor: 'pointer', fontSize: '13px', fontWeight: 500
-            }}>
-            <span>📊</span>
-            <span>{raporlarAcik ? 'CPR Üret' : 'Raporlar'}</span>
-          </button>
-        </div>
-
-        {/* RAPORLAR EKRANI */}
         {raporlarAcik && (
-          <div style={{ padding: '20px 24px', background: 'white', borderBottom: '0.5px solid var(--border)' }}>
+          <div className="raporlar-container">
             <Raporlar />
           </div>
         )}
 
-        {/* ANA İÇERİK */}
         {!raporlarAcik && (
-          <div className="container" style={{ padding: '20px 24px' }}>
+          <div className="main-container">
             <Kart1KonforAlani />
             <Kart2OgrenmStili />
             <Kart3TedaviUrun />
@@ -145,49 +170,18 @@ export default function MainContent() {
           </div>
         )}
 
-        {/* S4 SURVEY MODALİ */}
-        {s4ModalOpen && (
-          <div onClick={e => { if (e.target === e.currentTarget) setS4ModalOpen(false); }}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 200,
-              background: 'rgba(0,0,0,0.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-            }}>
-            <div style={{
-              background: 'white', borderRadius: '12px',
-              border: '0.5px solid var(--border)',
-              width: '100%', maxWidth: '600px',
-              maxHeight: '90vh', overflow: 'hidden',
-              display: 'flex', flexDirection: 'column'
-            }}>
-              <div style={{
-                padding: '14px 18px', borderBottom: '0.5px solid var(--border)',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
-              }}>
-                <span style={{ fontSize: '15px', fontWeight: 500 }}>Sosyal Stil Testi</span>
-                <button onClick={() => setS4ModalOpen(false)}
-                  style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666', lineHeight: 1 }}>
-                  ×
-                </button>
-              </div>
-              <div style={{ padding: '18px', overflowY: 'auto', flex: 1 }}>
-                {socialStyle && (
-                  <div style={{
-                    padding: '8px 14px', marginBottom: '14px', borderRadius: '8px',
-                    background: '#eef2ff', color: '#003cbb', fontSize: '13px'
-                  }}>
-                    Mevcut stil: <strong>{socialStyle}</strong>
-                  </div>
-                )}
-                <S4Survey onStyleCalculated={style => {
-                  setSocialStyle(style);
-                  setS4ModalOpen(false);
-                }} />
-              </div>
-            </div>
-          </div>
-        )}
-
+        <Modal
+          isOpen={s4ModalOpen}
+          onClose={() => setS4ModalOpen(false)}
+          title="Sosyal Stil Testi"
+          size="default"
+        >
+          <S4ModalContent
+            socialStyle={socialStyle}
+            onStyleCalculated={handleS4StyleCalculated}
+            onClose={() => setS4ModalOpen(false)}
+          />
+        </Modal>
       </div>
     </FastCPRProvider>
   );

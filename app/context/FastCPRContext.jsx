@@ -22,26 +22,12 @@ export function FastCPRProvider({ children }) {
   const [posologyOptions, setPosologyOptions] = useState([]);
   const [posology, setPosology] = useState('');
 
-  // ─── Editability ────────────────────────────────────────────────
-  const [editability, setEditability] = useState({
-    kullanim_sekli: false,
-    pozoloji:       false,
-    ozellikler:     false,
-    avantaj:        false,
-    fayda:          false,
-  });
-
-  // ─── Özellikler ─────────────────────────────────────────────────
-  const [ozellikOptions, setOzellikOptions] = useState([]);
-
   // ─── Claim Listesi ──────────────────────────────────────────────
-  const [claims, setClaims]     = useState([]);
-  const [problems, setProblems] = useState([]);
+  const [claims, setClaims] = useState([]);
 
   // ─── Seçili Claim ───────────────────────────────────────────────
   const [selectedClaim, setSelectedClaim]         = useState('');
   const [selectedClaimText, setSelectedClaimText] = useState('');
-  const [selectedProblem, setSelectedProblem]     = useState('');
 
   // ─── Rakip ──────────────────────────────────────────────────────
   const [selectedRakip, setSelectedRakip]           = useState('');
@@ -57,6 +43,12 @@ export function FastCPRProvider({ children }) {
 
   // ─── Feedback ID ────────────────────────────────────────────────
   const [feedbackId, setFeedbackId] = useState(null);
+
+  // ─── Editability ────────────────────────────────────────────────
+  const editability = {
+    kullanim_sekli: false,
+    pozoloji: false
+  };
 
   // ────────────────────────────────────────────────────────────────
   // Uygulama açılırken ürün listesini çek
@@ -77,7 +69,7 @@ export function FastCPRProvider({ children }) {
   }, [currentUser]);
 
   // ────────────────────────────────────────────────────────────────
-  // Ürün seçilince detay + claim + problem listesini çek
+  // Ürün seçilince detay + claim listesini çek
   // ────────────────────────────────────────────────────────────────
   async function handleUrunSelect(urunId) {
     if (!urunId) {
@@ -85,13 +77,9 @@ export function FastCPRProvider({ children }) {
       setUsageType('');
       setPosologyOptions([]);
       setPosology('');
-      setEditability({ kullanim_sekli: false, pozoloji: false, ozellikler: false, avantaj: false, fayda: false });
-      setOzellikOptions([]);
       setClaims([]);
-      setProblems([]);
       setSelectedClaim('');
       setSelectedClaimText('');
-      setSelectedProblem('');
       setSelectedRakip('');
       setSelectedRakipEtken('');
       setCprTexts({ activist: '', reflector: '', theorist: '', pragmatist: '' });
@@ -109,26 +97,16 @@ export function FastCPRProvider({ children }) {
         setUsageType(u.kullanim_sekli || '');
         setPosologyOptions(u.pozoloji  || []);
         setPosology(u.pozoloji?.[0]    || '');
-        setOzellikOptions(u.ozellikler || []);
-        setEditability({
-          kullanim_sekli: u.kullanim_sekli_editable,
-          pozoloji:       u.pozoloji_editable,
-          ozellikler:     u.ozellikler_editable,
-          avantaj:        u.avantaj_editable,
-          fayda:          u.fayda_editable,
-        });
 
         const contentRes  = await fetch(`/api/cpr/get-content?atc=${u.atc_kodu}`);
         const contentData = await contentRes.json();
         if (contentData.success) {
-          setClaims(contentData.claims   || []);
-          setProblems(contentData.problems || []);
+          setClaims(contentData.claims || []);
         }
       }
 
       setSelectedClaim('');
       setSelectedClaimText('');
-      setSelectedProblem('');
       setSelectedRakip('');
       setSelectedRakipEtken('');
       setCprTexts({ activist: '', reflector: '', theorist: '', pragmatist: '' });
@@ -140,14 +118,11 @@ export function FastCPRProvider({ children }) {
   }
 
   // ────────────────────────────────────────────────────────────────
-  // Claim seçilince aynı sira'daki problem bulunur
+  // Claim seçilince
   // ────────────────────────────────────────────────────────────────
   function handleClaimChange(claimText) {
     setSelectedClaim(claimText);
     setSelectedClaimText(claimText);
-    const claim   = claims.find(c => c.claim === claimText);
-    const problem = problems.find(p => p.sira === claim?.sira);
-    setSelectedProblem(problem?.problem || '');
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -204,15 +179,13 @@ export function FastCPRProvider({ children }) {
     posology,
     setPosology,
 
-    // Editability & Özellikler
+    // Editability
     editability,
-    ozellikOptions,
 
     // Claim
     claims,
     selectedClaim,
     selectedClaimText,
-    selectedProblem,
     handleClaimChange,
 
     // Rakip

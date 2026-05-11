@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Accordion } from './ui/Accordion'; // import { Accordion } from '@/components/ui/Accordion';
+import { Button } from './ui/Button'; // import { Button } from '@/components/ui/Button';
 
 const S4_STORAGE_KEY = 'fast_s4_selections';
 const S4_RESULT_KEY  = 'fast_s4_result';
@@ -132,7 +134,6 @@ export default function S4Survey({ onStyleCalculated }) {
       localStorage.setItem(S4_RESULT_KEY, JSON.stringify({ ...style, combination, counts: c }));
     } catch (e) {}
 
-    // Parent'a bildir — pill otomatik seçilecek
     if (onStyleCalculated) {
       onStyleCalculated(style.pill);
     }
@@ -149,54 +150,37 @@ export default function S4Survey({ onStyleCalculated }) {
   // ============================================
   if (loading) {
     return (
-      <div className="s4-test-wrapper" style={{ marginTop: '24px', padding: '20px', textAlign: 'center', color: '#666' }}>
+      <div className="s4-loading-state">
         ⏳ S4 soruları yükleniyor...
       </div>
     );
   }
 
   return (
-    <div className="s4-test-wrapper" style={{ marginTop: '24px' }}>
-      <details className="s4-main-accordion" open>
-        <summary>
-          <div className="s4-main-header">
-            <span className="s4-main-title">📋 FAST S4 Survey</span>
-          </div>
-          <div className="s4-main-meta">
-            <span className="s4-main-counter">
-              T: {counts.T}/15 | A: {counts.A}/15 | C: {counts.C}/15 | E: {counts.E}/15
-            </span>
-            <span className="s4-main-icon">▼</span>
-          </div>
-        </summary>
-
+    <div className="s4-test-wrapper">
+      <Accordion
+        title="📋 FAST S4 Survey"
+        variant="s4"
+        defaultOpen={true}
+        counterBadge={`T: ${counts.T}/15 | A: ${counts.A}/15 | C: ${counts.C}/15 | E: ${counts.E}/15`}
+      >
         <div className="s4-main-body">
           <p className="s4-description">
             Karşınızdakinin Sosyal Stilini belirlemek için 4 aşamalı bu testi kullanabilir ya da doğrudan seçiminizi işaretleyebilirsiniz
           </p>
 
           {limitMsg && (
-            <div style={{
-              background:     '#fff3cd',
-              borderLeft:     '4px solid #ffc107',
-              color:          '#856404',
-              padding:        '12px 16px',
-              margin:         '12px 0',
-              borderRadius:   '4px',
-              fontSize:       '14px'
-            }}>
+            <div className="s4-limit-message">
               ⚠️ {limitMsg}
             </div>
           )}
 
           <div className="s4-wrap">
-            <details className="s4-cat" open>
-              <summary>
-                <div className="s4-cat-header">
-                  <span className="s4-cat-icon-left">▶</span>
-                  <span className="s4-cat-title">{GROUP_LABELS[currentGroup]}</span>
-                </div>
-              </summary>
+            <Accordion
+              title={GROUP_LABELS[currentGroup]}
+              variant="s4-cat"
+              defaultOpen={true}
+            >
               <div className="s4-content">
                 {(questions[currentGroup] || []).map((soru, idx) => (
                   <div key={idx} className="s4-question">
@@ -213,39 +197,40 @@ export default function S4Survey({ onStyleCalculated }) {
                   </div>
                 ))}
               </div>
-            </details>
+            </Accordion>
 
             <div className="s4-nav">
-              <button
-                type="button"
-                className="s4-nav-btn"
+              <Button
+                variant="ghost"
+                size="small"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => p - 1)}
               >
                 ← Geri
-              </button>
+              </Button>
 
               {currentPage < totalPages ? (
-                <button
-                  type="button"
-                  className="s4-nav-btn s4-nav-btn-primary"
+                <Button
+                  variant="primary"
+                  size="small"
                   onClick={() => setCurrentPage(p => p + 1)}
                 >
                   İleri →
-                </button>
+                </Button>
               ) : (
-                <button
-                  type="button"
-                  className="s4-nav-btn s4-nav-btn-primary s4-nav-btn-result"
+                <Button
+                  variant="primary"
+                  size="small"
                   onClick={calculateStyle}
+                  className="s4-nav-btn-result"
                 >
                   Sonucu Göster
-                </button>
+                </Button>
               )}
             </div>
           </div>
         </div>
-      </details>
+      </Accordion>
     </div>
   );
 }

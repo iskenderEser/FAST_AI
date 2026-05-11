@@ -1,211 +1,326 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useFastCPR } from '../context/FastCPRContext';
+import { Modal } from './ui/Modal'; // import { Modal } from '@/components/ui/Modal';
+import { Button } from './ui/Button'; // import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent, CardActions } from './ui/Card'; // import { Card, CardHeader, CardTitle, CardContent, CardActions } from '@/components/ui/Card';
+import { buildDocDefinition, sanitizeFilename, downloadPDF } from '../utils/pdfUtils';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 pdfMake.vfs = pdfFonts.vfs;
 
-function buildDocDefinition(pdf) {
-  const stilCprlar = pdf.stil_cprlar || [];
-  const content = [
-    { text: 'FAST CPR KOÇU', style: 'header' },
-    { text: `Tarih: ${pdf.tarih || new Date().toLocaleString('tr-TR')}`, style: 'meta' },
-    { canvas: [{ type: 'line', x1: 0, y1: 4, x2: 515, y2: 4, lineWidth: 0.5, lineColor: '#cccccc' }], margin: [0, 8, 0, 12] },
-    { text: 'Ürün Bilgileri', style: 'sectionTitle' },
-    { text: `Ürün: ${pdf.urun || '—'}`, style: 'field' },
-    { text: `Tedavi Alanı: ${pdf.tedavi_alani || '—'}`, style: 'field' },
-    { text: `Kullanım Şekli: ${pdf.kullanim_sekli || '—'}`, style: 'field' },
-    { text: `Pozoloji: ${pdf.pozoloji || '—'}`, style: 'field' },
-    { text: '', margin: [0, 0, 0, 8] },
-    { text: 'Hekim Profili', style: 'sectionTitle' },
-    { text: `Öğrenme Stili: ${pdf.ogrenme_stili || '—'}`, style: 'field' },
-    { text: '', margin: [0, 0, 0, 8] },
-    { text: 'Hasta Şikayeti (Claim)', style: 'sectionTitle' },
-    { text: pdf.claim || '—', style: 'cprText' },
-    { text: '', margin: [0, 0, 0, 8] },
-  ];
-  if (stilCprlar.length > 0) {
-    content.push({ text: "Stil Bazlı CPR'lar", style: 'sectionTitle' });
-    stilCprlar.forEach(item => {
-      content.push({ text: item.stil, style: 'stilTitle' });
-      content.push({ text: item.cpr || '—', style: 'cprText' });
-      content.push({ text: '', margin: [0, 0, 0, 8] });
-    });
-  }
-  return {
-    content,
-    styles: {
-      header:       { fontSize: 18, bold: true, color: '#e30a17', margin: [0, 0, 0, 4] },
-      meta:         { fontSize: 10, color: '#888888' },
-      sectionTitle: { fontSize: 12, bold: true, color: '#003cbb', margin: [0, 0, 0, 4] },
-      stilTitle:    { fontSize: 11, bold: true, color: '#374151', margin: [0, 4, 0, 2] },
-      field:        { fontSize: 11, color: '#333333', margin: [0, 0, 0, 2] },
-      cprText:      { fontSize: 11, color: '#1a1a1a', lineHeight: 1.5, margin: [0, 0, 0, 4] },
-    },
-    defaultStyle: { font: 'Roboto' },
-    pageMargins: [40, 40, 40, 40],
-  };
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function truncateText(text, maxLength = 150) {
+  if (!text) return 'Claim girilmemiş';
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 }
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('tr-TR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+// ============================================
+// REUSABLE STATE CONTAINER COMPONENT
+// ============================================
+
+function StateContainer({ 
+  icon, 
+  title, 
+  description, 
+  variant = 'default', // 'default' | 'loading' | 'error' | 'empty'
+  onRetry 
+}) {
+  const getIcon = () => {
+    if (variant === 'loading') return '⏳';
+    if (variant === 'error') return '⚠️';
+    if (variant === 'empty') return '📄';
+    return icon || '📦';
+  };
+
+  const getTitle = () => {
+    if (variant === 'loading') return 'Yükleniyor...';
+    if (variant === 'error') return 'Bir Hata Oluştu';
+    if (variant === 'empty') return 'Arşiv Boş';
+    return title;
+  };
+
+  const getDescription = () => {
+    if (variant === 'loading') return 'Arşiv listesi hazırlanıyor';
+    if (variant === 'error') return description || 'Liste yüklenirken bir sorun oluştu';
+    if (variant === 'empty') return 'Henüz arşivlenmiş CPR bulunmuyor';
+    return description;
+  };
+
+  return (
+    <Card variant="default" hoverable={false}>
+      <CardContent>
+        <div className="state-container">
+          {variant === 'loading' ? (
+            <div className="loading-spinner" />
+          ) : (
+            <div className="state-icon">{getIcon()}</div>
+          )}
+          <div className={`state-title ${variant === 'error' ? 'error-state-title' : ''}`}>
+            {getTitle()}
+          </div>
+          <div className="state-description">{getDescription()}</div>
+          {variant === 'error' && onRetry && (
+            <Button variant="primary" size="small" onClick={onRetry} className="mt-3">
+              Tekrar Dene
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================
+// PDF CARD COMPONENT (Memoized)
+// ============================================
+
+const PDFCard = memo(function PDFCard({ pdf, onDelete, onDownload, isDownloading }) {
+  return (
+    <Card variant="pdf" hoverable={true} className="relative">
+      <button
+        type="button"
+        className="pdf-card-delete"
+        onClick={() => onDelete(pdf.id)}
+        title="Sil"
+      >
+        ×
+      </button>
+      <CardHeader>
+        <div>
+          <CardTitle>📅 {formatDate(pdf.created_at)}</CardTitle>
+          <div className="pdf-card-product">🎯 {pdf.urun || 'Ürün belirtilmemiş'}</div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="pdf-card-meta">
+          <div className="pdf-card-meta-item">
+            <span className="pdf-card-meta-label">Öğrenme Stili:</span>
+            <span>{pdf.ogrenme_stili || '—'}</span>
+          </div>
+        </div>
+        <div className="pdf-card-preview">
+          <div className="pdf-card-preview-label">Claim Önizleme</div>
+          <div className="pdf-card-preview-text">
+            {truncateText(pdf.claim, 150)}
+          </div>
+        </div>
+      </CardContent>
+      <CardActions>
+        <Button
+          variant="primary"
+          size="small"
+          onClick={() => onDownload(pdf)}
+          disabled={isDownloading}
+        >
+          {isDownloading ? (
+            <>
+              <span>⏳</span>
+              <span>Hazırlanıyor...</span>
+            </>
+          ) : (
+            <>
+              <span>⬇️</span>
+              <span>PDF İndir</span>
+            </>
+          )}
+        </Button>
+      </CardActions>
+    </Card>
+  );
+});
+
+PDFCard.displayName = 'PDFCard';
+
+// ============================================
+// MAIN PDF STOCK COMPONENT
+// ============================================
 
 export default function PDFStock() {
   const { currentUser } = useAuth();
 
-  const [modalOpen, setModalOpen]   = useState(false);
-  const [arsivList, setArsivList]   = useState([]);
-  const [arsivCount, setArsivCount] = useState(0);
-  const [loading, setLoading]       = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [arsivList, setArsivList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  
+  // Race condition prevention
+  const requestIdRef = useRef(0);
+  const abortControllerRef = useRef(null);
 
-  const updateArsivCount = useCallback(async () => {
+  const arsivCount = arsivList.length;
+
+  const loadPDFList = useCallback(async (force = false) => {
     if (!currentUser?.kullanici_id) return;
-    try {
-      const res  = await fetch(`/api/pdf/list?kullanici_id=${currentUser.kullanici_id}`);
-      const data = await res.json();
-      setArsivCount(data.data ? data.data.length : 0);
-    } catch (err) {
-      console.error('Arşiv sayısı alınamadı:', err);
+    
+    if (isDataLoaded && !force) return;
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
-  }, [currentUser]);
-
-  useEffect(() => {
-    updateArsivCount();
-  }, [updateArsivCount]);
-
-  function openModal() {
-    setModalOpen(true);
-    loadPDFList();
-  }
-
-  function closeModal() {
-    setModalOpen(false);
-  }
-
-  async function loadPDFList() {
-    if (!currentUser?.kullanici_id) return;
+    
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
+    const currentRequestId = ++requestIdRef.current;
+    
     setLoading(true);
+    setError(null);
+    
     try {
-      const res  = await fetch(`/api/pdf/list?kullanici_id=${currentUser.kullanici_id}`);
+      const res = await fetch(
+        `/api/pdf/list?kullanici_id=${currentUser.kullanici_id}`,
+        { signal: abortController.signal }
+      );
+      
+      // Ignore if this is not the latest request
+      if (currentRequestId !== requestIdRef.current) return;
+      
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Liste alınamadı');
+      
       setArsivList(data.data || []);
+      setIsDataLoaded(true);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error('PDF listesi alınamadı:', err);
+      if (currentRequestId === requestIdRef.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+        abortControllerRef.current = null;
+      }
     }
-  }
+  }, [currentUser, isDataLoaded]);
 
-  async function deletePDF(id) {
+  const deletePDF = useCallback(async (id) => {
     if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
     if (!currentUser?.kullanici_id) return;
+
+    // Local backup (no state)
+    const currentList = [...arsivList];
+    
+    // Optimistic update
+    setArsivList(prev => prev.filter(item => item.id !== id));
+
     try {
-      await fetch(`/api/pdf/delete?id=${id}&kullanici_id=${currentUser.kullanici_id}`, { method: 'DELETE' });
-      loadPDFList();
-      updateArsivCount();
+      const res = await fetch(`/api/pdf/delete?id=${id}&kullanici_id=${currentUser.kullanici_id}`, { 
+        method: 'DELETE' 
+      });
+      if (!res.ok) throw new Error('Silme işlemi başarısız');
     } catch (err) {
       console.error('PDF silinemedi:', err);
+      // Rollback using local backup
+      setArsivList(currentList);
+      setError(err.message);
+      setTimeout(() => setError(null), 3000);
     }
-  }
+  }, [currentUser, arsivList]);
 
-  function downloadFromArsiv(pdf) {
-    const docDef   = buildDocDefinition(pdf);
-    const fileName = `FAST_CPR_${pdf.urun || 'Rapor'}.pdf`;
-    pdfMake.createPdf(docDef).download(fileName);
-  }
+  const handleDownload = useCallback(async (pdf) => {
+    setDownloadingId(pdf.id);
+    try {
+      const docDef = buildDocDefinition(pdf);
+      const fileName = sanitizeFilename(`FAST_CPR_${pdf.urun || 'Rapor'}.pdf`);
+      await downloadPDF(docDef, fileName);
+    } catch (err) {
+      console.error('PDF indirilemedi:', err);
+      setError('PDF indirilemedi');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setDownloadingId(null);
+    }
+  }, []);
 
-  function formatDate(dateStr) {
-    return new Date(dateStr).toLocaleDateString('tr-TR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  }
+  const openModal = useCallback(() => {
+    setModalOpen(true);
+    loadPDFList();
+  }, [loadPDFList]);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+    setError(null);
+    // Cancel any pending request on close
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+
+  const retryLoad = useCallback(() => {
+    setIsDataLoaded(false);
+    loadPDFList(true);
+  }, [loadPDFList]);
+
+  useEffect(() => {
+    if (!modalOpen) {
+      setIsDataLoaded(false);
+      // Cancel pending requests when modal closes
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    }
+  }, [modalOpen]);
 
   return (
     <>
-      <div className="pdf-button-container" style={{ display: 'flex', gap: '12px' }}>
-        <button
-          className="btn secondary pdf-stock-badge"
-          title="Arşivlenmiş CPR'ları görüntüle"
+      <div className="pdf-button-container">
+        <Button
+          variant="secondary"
+          className="pdf-stock-badge"
           onClick={openModal}
         >
-          <span className="icon">📦</span>
+          <span>📦</span>
           <span>CPR Arşivi</span>
           {arsivCount > 0 && (
             <span className="pdf-count">{arsivCount}</span>
           )}
-        </button>
+        </Button>
       </div>
 
-      {modalOpen && (
-        <div
-          className="pdf-modal-overlay active"
-          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
-        >
-          <div className="pdf-modal">
-            <div className="pdf-modal-header">
-              <div className="pdf-modal-title">
-                <span>📦</span>
-                <span>CPR Arşivi</span>
-              </div>
-              <button className="pdf-modal-close" onClick={closeModal}>&times;</button>
-            </div>
-
-            <div className="pdf-modal-body">
-              {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                  ⏳ Yükleniyor...
-                </div>
-              ) : arsivList.length === 0 ? (
-                <div className="pdf-list-empty">
-                  <div className="pdf-list-empty-icon">📄</div>
-                  <div className="pdf-list-empty-text">Henüz arşivlenmiş CPR yok</div>
-                </div>
-              ) : (
-                arsivList.map(pdf => (
-                  <div key={pdf.id} className="pdf-card">
-                    <button
-                      className="pdf-card-delete"
-                      onClick={() => deletePDF(pdf.id)}
-                      title="Sil"
-                    >
-                      ×
-                    </button>
-                    <div className="pdf-card-header">
-                      <div>
-                        <div className="pdf-card-date">📅 {formatDate(pdf.created_at)}</div>
-                        <div className="pdf-card-product">🎯 {pdf.urun || 'Ürün belirtilmemiş'}</div>
-                      </div>
-                    </div>
-                    <div className="pdf-card-meta">
-                      <div className="pdf-card-meta-item">
-                        <span className="pdf-card-meta-label">Öğrenme Stili:</span>
-                        <span>{pdf.ogrenme_stili || '—'}</span>
-                      </div>
-                    </div>
-                    <div className="pdf-card-preview">
-                      <div className="pdf-card-preview-label">Claim Önizleme</div>
-                      <div className="pdf-card-preview-text">
-                        {pdf.claim
-                          ? pdf.claim.substring(0, 150) + (pdf.claim.length > 150 ? '...' : '')
-                          : 'Claim girilmemiş'}
-                      </div>
-                    </div>
-                    <div className="pdf-card-actions">
-                      <button
-                        className="btn primary small"
-                        onClick={() => downloadFromArsiv(pdf)}
-                      >
-                        <span>⬇️</span>
-                        <span>PDF İndir</span>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+      <Modal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title="📦 CPR Arşivi"
+        size="large"
+      >
+        <div className="modal-content-wrapper">
+          {loading ? (
+            <StateContainer variant="loading" />
+          ) : error ? (
+            <StateContainer variant="error" description={error} onRetry={retryLoad} />
+          ) : arsivList.length === 0 ? (
+            <StateContainer variant="empty" />
+          ) : (
+            arsivList.map(pdf => (
+              <PDFCard
+                key={pdf.id}
+                pdf={pdf}
+                onDelete={deletePDF}
+                onDownload={handleDownload}
+                isDownloading={downloadingId === pdf.id}
+              />
+            ))
+          )}
         </div>
-      )}
+      </Modal>
     </>
   );
 }

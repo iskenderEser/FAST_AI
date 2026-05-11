@@ -91,14 +91,12 @@ function getTrendLabels(filtre) {
   switch (filtre) {
     case 'gunluk':
       return ['08:00','10:00','12:00','14:00','16:00','18:00'];
-
     case 'haftalik': {
       const dun = new Date(bugun);
       dun.setUTCDate(dun.getUTCDate() - 1);
       const gunSirasi = dun.getUTCDay() === 0 ? 6 : dun.getUTCDay() - 1;
       return ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].slice(0, gunSirasi + 1);
     }
-
     case 'aylik': {
       const dun = new Date(bugun);
       dun.setUTCDate(dun.getUTCDate() - 1);
@@ -107,7 +105,6 @@ function getTrendLabels(filtre) {
       for (let i = 1; i <= haftaSayisi; i++) labels.push(`Hf${i}`);
       return labels;
     }
-
     case '3aylik': {
       const mevcutDonem = Math.floor(nowTR.getUTCMonth() / 3);
       if (mevcutDonem === 0) return ['4. Dönem'];
@@ -115,14 +112,12 @@ function getTrendLabels(filtre) {
       for (let i = 0; i < mevcutDonem; i++) labels.push(`${i + 1}. Dönem`);
       return labels;
     }
-
     case 'yillik': {
       const tumAylar = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
       const oncekiAy = nowTR.getUTCMonth() - 1;
       if (oncekiAy < 0) return tumAylar;
       return tumAylar.slice(0, oncekiAy + 1);
     }
-
     default:
       return ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
   }
@@ -130,7 +125,6 @@ function getTrendLabels(filtre) {
 
 function getTrendKey(filtre, dateStr) {
   const trDate = toTR(dateStr);
-
   switch (filtre) {
     case 'gunluk': {
       const h    = trDate.getUTCHours();
@@ -197,6 +191,24 @@ function buildNedenler(feedbacks) {
   };
 }
 
+function buildClaimDetay(feedbacks, urunMap) {
+  const map = {};
+
+  feedbacks.forEach(f => {
+    if (!f.claim) return;
+    const urunAdi = urunMap[f.urun_id] || 'Bilinmiyor';
+    const stil    = f.stil || 'bilinmiyor';
+    const key     = `${urunAdi}__${stil}__${f.claim}`;
+
+    if (!map[key]) {
+      map[key] = { urun: urunAdi, stil, claim: f.claim, adet: 0 };
+    }
+    map[key].adet++;
+  });
+
+  return Object.values(map).sort((a, b) => b.adet - a.adet);
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -228,6 +240,7 @@ export async function GET(request) {
     const urunMap = {};
     (urunler || []).forEach(u => { urunMap[u.id] = u.urun_adi; });
 
+    // Ürün bazlı kullanım
     const urunSayiMap = {};
     fb.forEach(f => {
       const ad = urunMap[f.urun_id] || 'Bilinmiyor';
@@ -237,15 +250,35 @@ export async function GET(request) {
     const urunSirali  = Object.entries(urunSayiMap).sort((a, b) => b[1] - a[1]);
     const urun        = urunSirali.map(([, adet]) => toplamUrun > 0 ? Math.round(adet / toplamUrun * 100) : 0);
     const urun_adlari = urunSirali.map(([ad]) => ad);
+    const urun_adet   = urunSirali.map(([, adet]) => adet);
 
+    // Ürün bazlı stil dağılımı
+    const urunStilMap = {};
+    fb.forEach(f => {
+      const ad = urunMap[f.urun_id] || 'Bilinmiyor';
+      if (!urunStilMap[ad]) urunStilMap[ad] = {};
+      urunStilMap[ad][f.stil] = (urunStilMap[ad][f.stil] || 0) + 1;
+    });
+
+    const STIL_SIRA = ['pragmatist', 'activist', 'theorist', 'reflector'];
+    const urun_stil = urun_adlari.map(ad => {
+      const stilMap  = urunStilMap[ad] || {};
+      const toplam   = Object.values(stilMap).reduce((s, v) => s + v, 0);
+      return STIL_SIRA.map(s => toplam > 0 ? Math.round((stilMap[s] || 0) / toplam * 100) : 0);
+    });
+
+    // Genel stil dağılımı
     const stilSayiMap = {};
     fb.forEach(f => { stilSayiMap[f.stil] = (stilSayiMap[f.stil] || 0) + 1; });
-    const STIL_SIRA  = ['pragmatist','activist','theorist','reflector'];
     const toplamStil = fb.length;
-    const stil       = STIL_SIRA
+    const stil = STIL_SIRA
       .filter(s => stilSayiMap[s])
       .map(s => toplamStil > 0 ? Math.round(stilSayiMap[s] / toplamStil * 100) : 0);
 
+    // Claim detay (ürün + stil + claim + adet)
+    const claim_detay = buildClaimDetay(fb, urunMap);
+
+    // Eski claim yapısı (geriye dönük uyumluluk)
     const claimSayiMap = {};
     fb.forEach(f => {
       if (f.claim) claimSayiMap[f.claim] = (claimSayiMap[f.claim] || 0) + 1;
@@ -265,9 +298,12 @@ export async function GET(request) {
       arsivlenen,
       urun,
       urun_adlari,
+      urun_adet,
+      urun_stil,
       stil,
       claim,
       claim_adlari,
+      claim_detay,
       trend,
       fb: nedenler,
     });

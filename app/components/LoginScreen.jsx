@@ -1,7 +1,112 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, createRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Button } from './ui/Button'; // import { Button } from '@/components/ui/Button';
+
+// ============================================
+// OTP VERIFICATION STEP COMPONENT
+// ============================================
+
+function OtpVerificationStep({ 
+  phoneDisplay, 
+  otpValues, 
+  otpRefs, 
+  onOtpChange, 
+  onOtpKeyDown,
+  otpTimerDisplay,
+  onVerify,
+  onBack,
+  onResend,
+  resendDisabled,
+  resendTimeLeft
+}) {
+  return (
+    <>
+      <div className="otp-info-box">
+        <div className="otp-info-title">Doğrulama kodu gönderildi</div>
+        <div className="otp-info-phone">📱 {phoneDisplay}</div>
+      </div>
+
+      <div className="otp-input-row">
+        {otpRefs.map((ref, idx) => (
+          <input
+            key={idx}
+            ref={ref}
+            type="tel"
+            maxLength={1}
+            className="otp-input"
+            value={otpValues[idx]}
+            onChange={e => onOtpChange(idx, e.target.value)}
+            onKeyDown={e => onOtpKeyDown(idx, e)}
+          />
+        ))}
+      </div>
+
+      <div className="otp-timer">
+        {otpTimerDisplay}
+      </div>
+
+      <Button variant="primary" className="w-full h-14 text-lg font-semibold" onClick={onVerify}>
+        <span>✅</span>
+        <span>Doğrula</span>
+      </Button>
+
+      <div className="otp-actions">
+        <Button variant="ghost" size="small" className="!bg-transparent !border-0 !shadow-none !rounded-none !p-0" onClick={onBack}>
+          ← Geri Dön
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="small"
+          className="!bg-transparent !border-0 !shadow-none !rounded-none !p-0"
+          onClick={onResend}
+          disabled={resendDisabled}
+        >
+          {resendDisabled ? `Yeniden gönder (${resendTimeLeft}s)` : 'Yeniden gönder'}
+        </Button>
+      </div>
+    </>
+  );
+}
+
+// ============================================
+// PWA BANNER COMPONENT
+// ============================================
+
+function PWABanner() {
+  return (
+    <div className="pwa-banner">
+      <div className="pwa-banner-title">
+        ❗️ FAST'i telefonunuzun ya da tabletinizin ana ekranına ekleyebilirsiniz
+      </div>
+      <div className="pwa-banner-item">
+        📱 iPhone/iPad: Safari'de Paylaş (📤) → Ana Ekrana Ekle
+      </div>
+      <div className="pwa-banner-item">
+        📱 Android: Chrome Menü (⋮) → Ana Ekrana Ekle
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// MESSAGE COMPONENT
+// ============================================
+
+function MessageBanner({ message }) {
+  if (!message.text) return null;
+  
+  return (
+    <div className={`message-banner message-banner--${message.type}`}>
+      {message.text}
+    </div>
+  );
+}
+
+// ============================================
+// MAIN LOGIN SCREEN
+// ============================================
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -31,11 +136,8 @@ export default function LoginScreen() {
   const otpTimerRef = useRef(null);
   const resendTimerRef = useRef(null);
 
-  // OTP input ref'leri
-  const otpRefs = [
-    useRef(null), useRef(null), useRef(null),
-    useRef(null), useRef(null), useRef(null)
-  ];
+  // OTP input ref'leri - useRef ile stabilize edildi
+  const otpRefs = useRef([...Array(6)].map(() => createRef()));
 
   // PWA Banner
   const [showPWABanner, setShowPWABanner] = useState(false);
@@ -59,21 +161,19 @@ export default function LoginScreen() {
   // YARDIMCI FONKSİYONLAR
   // ============================================
 
-  function getDeviceFingerprint() {
-    const data = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width + 'x' + screen.height,
-      screen.colorDepth,
-      new Date().getTimezoneOffset()
-    ].join('|');
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      hash = ((hash << 5) - hash) + data.charCodeAt(i);
-      hash = hash & hash;
-    }
-    return 'dev_' + Math.abs(hash).toString(36);
+function getDeviceFingerprint() {
+  let deviceId = localStorage.getItem('fast_device_id');
+
+  if (!deviceId) {
+    deviceId =
+      'dev_' +
+      crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+
+    localStorage.setItem('fast_device_id', deviceId);
   }
+
+  return deviceId;
+}
 
   function hashPhone(phoneStr) {
     let hash = 0;
@@ -140,12 +240,12 @@ export default function LoginScreen() {
     const newValues = [...otpValues];
     newValues[idx] = val;
     setOtpValues(newValues);
-    if (val && idx < 5) otpRefs[idx + 1].current?.focus();
+    if (val && idx < 5) otpRefs.current[idx + 1].current?.focus();
   }
 
   function handleOtpKeyDown(idx, e) {
     if (e.key === 'Backspace' && !otpValues[idx] && idx > 0) {
-      otpRefs[idx - 1].current?.focus();
+      otpRefs.current[idx - 1].current?.focus();
     }
   }
 
@@ -317,7 +417,7 @@ export default function LoginScreen() {
       if (!data.success) {
         showError('❌ ' + (data.error || 'Hatalı kod!'));
         resetOtpInputs();
-        otpRefs[0].current?.focus();
+        otpRefs.current[0].current?.focus();
         return;
       }
 
@@ -333,43 +433,15 @@ export default function LoginScreen() {
   // ============================================
 
   return (
-    <div id="loginScreen">
-      <div className="login-container">
+    <div id="loginScreen" className="min-h-screen flex items-center justify-center">
+      <div className="login-container w-full max-w-md mx-auto px-4 sm:px-6">
         <div className="login-header">
-          <h1>🔐 FAST AI</h1>
-
-          {showPWABanner && (
-            <div style={{
-              background: '#ffffff',
-              border: '1px solid #dc2626',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              margin: '16px 0'
-            }}>
-              <div style={{ fontSize: '11px', color: '#dc2626', marginBottom: '10px', lineHeight: '1.4' }}>
-                ❗️ FAST'i telefonunuzun ya da tabletinizin ana ekranına ekleyebilirsiniz
-              </div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px' }}>
-                📱 iPhone/iPad: Safari'de Paylaş (📤) → Ana Ekrana Ekle
-              </div>
-              <div style={{ fontSize: '11px', color: '#666' }}>
-                📱 Android: Chrome Menü (⋮) → Ana Ekrana Ekle
-              </div>
-            </div>
-          )}
+          <h1 className="font-bold">🔐 FAST AI</h1>
+          {showPWABanner && <PWABanner />}
         </div>
 
-        <div className="login-form">
-
-          {message.text && (
-            <div className="login-error show" style={{
-              background: message.type === 'error' ? '#fef2f2' : '#f0fdf4',
-              borderColor: message.type === 'error' ? '#fecaca' : '#86efac',
-              color: message.type === 'error' ? '#b91c1c' : '#166534'
-            }}>
-              {message.text}
-            </div>
-          )}
+        <div className="login-form flex flex-col gap-4">
+          <MessageBanner message={message} />
 
           {!otpVisible ? (
             <>
@@ -389,7 +461,6 @@ export default function LoginScreen() {
                     className="login-eye-icon"
                     title="Göster/Gizle"
                     onClick={() => setShowPassword(prev => !prev)}
-                    style={{ cursor: 'pointer' }}
                   >
                     {showPassword ? '🙈' : '👁️'}
                   </span>
@@ -410,74 +481,31 @@ export default function LoginScreen() {
                 />
               </div>
 
-              <button className="login-btn-primary" onClick={handleSendCode}>
+              <Button variant="primary" className="w-full min-h-[52px]" onClick={handleSendCode}>
                 <span>🔓</span>
                 <span>Giriş Yap</span>
-              </button>
+              </Button>
             </>
           ) : (
-            <>
-              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                <div style={{ fontSize: '14px', color: '#333', marginBottom: '6px' }}>
-                  Doğrulama kodu gönderildi
-                </div>
-                <div style={{ fontSize: '13px', color: '#666' }}>
-                  📱 {otpPhoneDisplay}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
-                {otpRefs.map((ref, idx) => (
-                  <input
-                    key={idx}
-                    ref={ref}
-                    type="tel"
-                    maxLength={1}
-                    value={otpValues[idx]}
-                    onChange={e => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={e => handleOtpKeyDown(idx, e)}
-                    style={{
-                      width: '42px', height: '48px', textAlign: 'center',
-                      fontSize: '20px', fontWeight: 600,
-                      border: '2px solid #ddd', borderRadius: '8px',
-                      outline: 'none'
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div style={{ textAlign: 'center', fontSize: '12px', color: '#888', marginBottom: '12px' }}>
-                {otpTimerDisplay}
-              </div>
-
-              <button className="login-btn-primary" onClick={handleVerifyCode}>
-                <span>✅</span>
-                <span>Doğrula</span>
-              </button>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
-                <button
-                  onClick={handleBackToLogin}
-                  style={{ background: 'none', border: 'none', fontSize: '13px', color: '#666', cursor: 'pointer' }}>
-                  ← Geri Dön
-                </button>
-                <button
-                  onClick={handleResendCode}
-                  disabled={resendDisabled}
-                  style={{
-                    background: 'none', border: 'none', fontSize: '13px',
-                    color: resendDisabled ? '#ccc' : '#003cbb',
-                    cursor: resendDisabled ? 'not-allowed' : 'pointer'
-                  }}>
-                  {resendDisabled ? `Yeniden gönder (${resendTimeLeft}s)` : 'Yeniden gönder'}
-                </button>
-              </div>
-            </>
+            <OtpVerificationStep
+              phoneDisplay={otpPhoneDisplay}
+              otpValues={otpValues}
+              otpRefs={otpRefs.current}
+              onOtpChange={handleOtpChange}
+              onOtpKeyDown={handleOtpKeyDown}
+              otpTimerDisplay={otpTimerDisplay}
+              onVerify={handleVerifyCode}
+              onBack={handleBackToLogin}
+              onResend={handleResendCode}
+              resendDisabled={resendDisabled}
+              resendTimeLeft={resendTimeLeft}
+            />
           )}
         </div>
 
         <div className="login-footer">
           © 2026 FAST AI - Tüm hakları saklıdır
+           FAST AI, Anthropic'in Claude Sonnet 4.6 modeli ile geliştirilmiştir.
         </div>
       </div>
     </div>

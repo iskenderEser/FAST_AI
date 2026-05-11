@@ -2,40 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-
-function Modal({ title, onClose, children }) {
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 300,
-      background: 'rgba(0,0,0,0.4)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-    }}>
-      <div style={{
-        background: 'white', borderRadius: '12px',
-        border: '1px solid #eee', width: '100%', maxWidth: '650px',
-        maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'
-      }}>
-        <div style={{
-          padding: '14px 18px', borderBottom: '1px solid #eee',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-        }}>
-          <span style={{ fontSize: '15px', fontWeight: 600 }}>{title}</span>
-          <button onClick={onClose} style={{
-            background: 'none', border: 'none', fontSize: '20px',
-            cursor: 'pointer', color: '#666', lineHeight: 1
-          }}>×</button>
-        </div>
-        <div style={{ padding: '18px', overflowY: 'auto', flex: 1 }}>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 
 function Toggle({ label, checked, onChange }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#555', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+    <label className="admin-form__toggle">
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
       {label}
     </label>
@@ -46,26 +18,24 @@ export default function Urunler() {
   const { currentUser } = useAuth();
   const isAdmin = currentUser?.rol === 'admin';
 
-  const [urunler, setUrunler]           = useState([]);
-  const [atcKodlari, setAtcKodlari]     = useState([]);
-  const [firmalar, setFirmalar]         = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [modalOpen, setModalOpen]       = useState(false);
-  const [editUrun, setEditUrun]         = useState(null);
-  const [msg, setMsg]                   = useState('');
+  const [urunler, setUrunler]               = useState([]);
+  const [atcKodlari, setAtcKodlari]         = useState([]);
+  const [firmalar, setFirmalar]             = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [modalOpen, setModalOpen]           = useState(false);
+  const [editUrun, setEditUrun]             = useState(null);
+  const [msg, setMsg]                       = useState('');
 
-  // Form alanları
-  const [seciliFirmaId, setSeciliFirmaId] = useState('');
-  const [urunAdi, setUrunAdi]           = useState('');
-  const [atcKodu, setAtcKodu]           = useState('');
-  const [atcOneri, setAtcOneri]         = useState('');
-  const [atcYukleniyor, setAtcYukleniyor] = useState(false);
-  const [kullanim, setKullanim]         = useState('');
-  const [pozoloji, setPozoloji]         = useState('');
-  const [ozellikler, setOzellikler]     = useState('');
-  const [saving, setSaving]             = useState(false);
+  const [seciliFirmaId, setSeciliFirmaId]   = useState('');
+  const [urunAdi, setUrunAdi]               = useState('');
+  const [atcKodu, setAtcKodu]               = useState('');
+  const [atcOneri, setAtcOneri]             = useState('');
+  const [atcYukleniyor, setAtcYukleniyor]   = useState(false);
+  const [kullanim, setKullanim]             = useState('');
+  const [pozoloji, setPozoloji]             = useState('');
+  const [ozellikler, setOzellikler]         = useState('');
+  const [saving, setSaving]                 = useState(false);
 
-  // Editable toggles
   const [kullanımEditable, setKullanımEditable]     = useState(false);
   const [polojiEditable, setPolojiEditable]         = useState(false);
   const [ozelliklerEditable, setOzelliklerEditable] = useState(false);
@@ -149,11 +119,7 @@ export default function Urunler() {
       const url    = editUrun ? `/api/admin/urunler?id=${editUrun.id}` : '/api/admin/urunler';
       const method = editUrun ? 'PATCH' : 'POST';
 
-      const res  = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      const res  = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.success) {
         setMsg('✅ Ürün kaydedildi.');
@@ -201,55 +167,37 @@ export default function Urunler() {
     }
   }
 
-  // Admin için tablo başlığında firma kolonu
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div style={{ fontSize: '13px', color: '#888' }}>{urunler.length} ürün kayıtlı</div>
-        <button
-          onClick={() => { resetForm(); setModalOpen(true); }}
-          style={{
-            padding: '7px 14px', borderRadius: '7px', border: 'none',
-            background: '#003cbb', color: 'white', cursor: 'pointer',
-            fontSize: '12px', fontWeight: 500
-          }}>
+      <div className="admin-panel__toolbar">
+        <span className="admin-panel__count">{urunler.length} ürün kayıtlı</span>
+        <Button variant="primary" size="small" onClick={() => { resetForm(); setModalOpen(true); }}>
           + Ürün Ekle
-        </button>
+        </Button>
       </div>
 
-      {msg && (
-        <div style={{ padding: '8px 12px', borderRadius: '7px', background: '#f1f3f8', fontSize: '12px', marginBottom: '12px' }}>{msg}</div>
-      )}
+      {msg && <div className="admin-panel__msg">{msg}</div>}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Yükleniyor...</div>
+        <div className="admin-panel__loading">Yükleniyor...</div>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+        <table className="admin-table">
           <thead>
-            <tr style={{ borderBottom: '2px solid #eee' }}>
-              <th style={{ textAlign: 'left', padding: '8px 12px', color: '#555', fontWeight: 600 }}>Ürün Adı</th>
-              <th style={{ textAlign: 'left', padding: '8px 12px', color: '#555', fontWeight: 600 }}>ATC Kodu</th>
-              <th style={{ textAlign: 'left', padding: '8px 12px', color: '#555', fontWeight: 600 }}>Kullanım</th>
-              <th style={{ textAlign: 'right', padding: '8px 12px', color: '#555', fontWeight: 600 }}>İşlem</th>
+            <tr>
+              <th>Ürün Adı</th>
+              <th>ATC Kodu</th>
+              <th>Kullanım</th>
+              <th className="admin-table th--right">İşlem</th>
             </tr>
           </thead>
           <tbody>
             {urunler.map(u => (
-              <tr key={u.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 500 }}>{u.urun_adi}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{
-                    fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
-                    background: '#eef2ff', color: '#003cbb', fontWeight: 600
-                  }}>{u.atc_kodu}</span>
-                </td>
-                <td style={{ padding: '10px 12px', color: '#888' }}>{u.kullanim_sekli || '—'}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                  <button
-                    onClick={() => handleDuzenle(u)}
-                    style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', fontSize: '12px' }}>
-                    Düzenle
-                  </button>
+              <tr key={u.id}>
+                <td className="admin-table td--bold">{u.urun_adi}</td>
+                <td><span className="admin-badge admin-badge--atc">{u.atc_kodu}</span></td>
+                <td className="admin-table td--muted">{u.kullanim_sekli || '—'}</td>
+                <td className="admin-table td--right">
+                  <Button variant="ghost" size="small" onClick={() => handleDuzenle(u)}>Düzenle</Button>
                 </td>
               </tr>
             ))}
@@ -257,136 +205,86 @@ export default function Urunler() {
         </table>
       )}
 
-      {modalOpen && (
-        <Modal title={editUrun ? 'Ürün Düzenle' : 'Yeni Ürün Ekle'} onClose={() => { setModalOpen(false); resetForm(); }}>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => { setModalOpen(false); resetForm(); }}
+        title={editUrun ? 'Ürün Düzenle' : 'Yeni Ürün Ekle'}
+        size="default"
+      >
+        {isAdmin && (
+          <div className="admin-form__group">
+            <label className="admin-form__label">Firma *</label>
+            <select className="admin-form__input" value={seciliFirmaId} onChange={e => setSeciliFirmaId(e.target.value)}>
+              <option value="">Seçiniz...</option>
+              {firmalar.map(f => <option key={f.id} value={f.id}>{f.firma_adi}</option>)}
+            </select>
+          </div>
+        )}
 
-          {/* Admin: Firma Seç */}
-          {isAdmin && (
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Firma *</label>
-              <select
-                value={seciliFirmaId}
-                onChange={e => setSeciliFirmaId(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '13px' }}>
-                <option value="">Seçiniz...</option>
-                {firmalar.map(f => (
-                  <option key={f.id} value={f.id}>{f.firma_adi}</option>
-                ))}
-              </select>
-            </div>
-          )}
+        <div className="admin-form__group">
+          <label className="admin-form__label">Ürün Adı *</label>
+          <input className="admin-form__input" value={urunAdi} onChange={e => setUrunAdi(e.target.value)} placeholder="Zoramisin, Fluzon..." />
+        </div>
 
-          {/* Ürün Adı */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Ürün Adı *</label>
-            <input
-              value={urunAdi}
-              onChange={e => setUrunAdi(e.target.value)}
-              placeholder="Zoramisin, Fluzon..."
-              style={{ width: '100%', padding: '8px 10px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '13px', boxSizing: 'border-box' }}
+        <div className="admin-form__group">
+          <label className="admin-form__label">Özellikler (her satır bir özellik)</label>
+          <div className="admin-form__row">
+            <textarea
+              className="admin-form__textarea admin-form__flex"
+              value={ozellikler}
+              onChange={e => setOzellikler(e.target.value)}
+              placeholder={'Hızlı etki\nUzun salınım\nYan etki profili...'}
+              rows={3}
             />
+            <Toggle label="Düzenlenebilir" checked={ozelliklerEditable} onChange={setOzelliklerEditable} />
           </div>
+        </div>
 
-          {/* Özellikler */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Özellikler (her satır bir özellik)</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-              <textarea
-                value={ozellikler}
-                onChange={e => setOzellikler(e.target.value)}
-                placeholder={'Hızlı etki\nUzun salınım\nYan etki profili...'}
-                rows={3}
-                style={{ flex: 1, padding: '8px 10px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '13px', resize: 'vertical' }}
-              />
-              <div style={{ marginTop: '4px' }}>
-                <Toggle label="Düzenlenebilir" checked={ozelliklerEditable} onChange={setOzelliklerEditable} />
-              </div>
-            </div>
+        <div className="admin-form__group">
+          <label className="admin-form__label">ATC Kodu (2. Seviye) *</label>
+          <div className="admin-form__row admin-form__row--center">
+            <select className="admin-form__input admin-form__flex" value={atcKodu} onChange={e => setAtcKodu(e.target.value)}>
+              <option value="">Seçiniz...</option>
+              {atcKodlari.map(a => <option key={a.kod} value={a.kod}>{a.kod} — {a.aciklama}</option>)}
+            </select>
+            <Button variant="ghost" size="small" onClick={handleAtcOner} disabled={atcYukleniyor}>
+              {atcYukleniyor ? '⏳' : '🤖 AI Öner'}
+            </Button>
           </div>
+          {atcOneri && <div className="admin-atc-oneri">{atcOneri}</div>}
+        </div>
 
-          {/* ATC Kodu + AI Öneri */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>ATC Kodu (2. Seviye) *</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <select
-                value={atcKodu}
-                onChange={e => setAtcKodu(e.target.value)}
-                style={{ flex: 1, padding: '8px 10px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '13px' }}>
-                <option value="">Seçiniz...</option>
-                {atcKodlari.map(a => (
-                  <option key={a.kod} value={a.kod}>{a.kod} — {a.aciklama}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleAtcOner}
-                disabled={atcYukleniyor}
-                style={{
-                  padding: '8px 12px', borderRadius: '7px', border: '1px solid #ddd',
-                  background: 'white', cursor: atcYukleniyor ? 'not-allowed' : 'pointer',
-                  fontSize: '12px', whiteSpace: 'nowrap', flexShrink: 0, opacity: atcYukleniyor ? 0.6 : 1
-                }}>
-                {atcYukleniyor ? '⏳' : '🤖 AI Öner'}
-              </button>
-            </div>
-            {atcOneri && (
-              <div style={{
-                marginTop: '6px', padding: '8px 10px', borderRadius: '7px',
-                background: '#eef2ff', border: '1px solid #c7d7f9',
-                fontSize: '12px', color: '#003cbb'
-              }}>
-                {atcOneri}
-              </div>
-            )}
+        <div className="admin-form__group">
+          <label className="admin-form__label">Farmasötik Form</label>
+          <div className="admin-form__row admin-form__row--center">
+            <input className="admin-form__input admin-form__flex" value={kullanim} onChange={e => setKullanim(e.target.value)} placeholder="Oral, Topikal..." />
+            <Toggle label="Düzenlenebilir" checked={kullanımEditable} onChange={setKullanımEditable} />
           </div>
+        </div>
 
-          {/* Farmasötik Form */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Farmasötik Form</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input
-                value={kullanim}
-                onChange={e => setKullanim(e.target.value)}
-                placeholder="Oral, Topikal..."
-                style={{ flex: 1, padding: '8px 10px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '13px' }}
-              />
-              <Toggle label="Düzenlenebilir" checked={kullanımEditable} onChange={setKullanımEditable} />
-            </div>
+        <div className="admin-form__group admin-form__group--last">
+          <label className="admin-form__label">Pozoloji (her satır bir seçenek)</label>
+          <div className="admin-form__row">
+            <textarea
+              className="admin-form__textarea admin-form__flex"
+              value={pozoloji}
+              onChange={e => setPozoloji(e.target.value)}
+              placeholder={'1x1\n2x1\n3x1'}
+              rows={3}
+            />
+            <Toggle label="Düzenlenebilir" checked={polojiEditable} onChange={setPolojiEditable} />
           </div>
+        </div>
 
-          {/* Pozoloji */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Pozoloji (her satır bir seçenek)</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-              <textarea
-                value={pozoloji}
-                onChange={e => setPozoloji(e.target.value)}
-                placeholder={'1x1\n2x1\n3x1'}
-                rows={3}
-                style={{ flex: 1, padding: '8px 10px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '13px', resize: 'vertical' }}
-              />
-              <div style={{ marginTop: '4px' }}>
-                <Toggle label="Düzenlenebilir" checked={polojiEditable} onChange={setPolojiEditable} />
-              </div>
-            </div>
-          </div>
+        {msg && <div className="admin-form__error">{msg}</div>}
 
-          {msg && <div style={{ color: '#c0392b', fontSize: '12px', marginBottom: '10px' }}>{msg}</div>}
-
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => { setModalOpen(false); resetForm(); }}
-              style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', fontSize: '12px' }}>
-              İptal
-            </button>
-            <button
-              onClick={handleKaydet}
-              disabled={saving}
-              style={{ padding: '7px 14px', borderRadius: '7px', border: 'none', background: '#003cbb', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontSize: '12px', opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'Kaydediliyor...' : 'Kaydet'}
-            </button>
-          </div>
-        </Modal>
-      )}
+        <div className="admin-form__actions">
+          <Button variant="ghost" size="small" onClick={() => { setModalOpen(false); resetForm(); }}>İptal</Button>
+          <Button variant="primary" size="small" onClick={handleKaydet} disabled={saving}>
+            {saving ? 'Kaydediliyor...' : 'Kaydet'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
