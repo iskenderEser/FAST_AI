@@ -27,28 +27,32 @@ const STYLE_MAP = {
   'AC+AE': 'Pragmatist'
 };
 
+const ANA_MAX = 16;
+const ALT_MAX = 8;
+
 // ============================================
 // SELECTABLE OPTION CARD
 // ============================================
 
-function SelectableOptionCard({ question, isSelected, onClick, isEven }) {
+function SelectableOptionCard({ question, isSelected, onClick, isEven, disabled }) {
   const cardClass = [
     'kart2__option',
     isSelected ? 'kart2__option--selected' : '',
-    isEven ? 'kart2__option--even' : 'kart2__option--odd'
+    isEven ? 'kart2__option--even' : 'kart2__option--odd',
+    disabled && !isSelected ? 'kart2__locked' : ''
   ].filter(Boolean).join(' ');
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onClick();
+      if (!disabled || isSelected) onClick();
     }
   }
 
   return (
     <div
       className={cardClass}
-      onClick={onClick}
+      onClick={() => { if (!disabled || isSelected) onClick(); }}
       role="button"
       tabIndex={0}
       onKeyDown={handleKeyDown}
@@ -80,24 +84,29 @@ function WarningMessage({ message }) {
 // SORU LİSTESİ
 // ============================================
 
-function QuestionList({ questions, selections, onCheck }) {
+function QuestionList({ questions, selections, onCheck, anaKilitli }) {
   return (
     <div className="kart2__list">
-      {questions.map((q, i) => (
-        <SelectableOptionCard
-          key={q.sira}
-          question={q}
-          isSelected={!!selections[q.sira]}
-          onClick={() => onCheck(q.sira)}
-          isEven={i % 2 === 0}
-        />
-      ))}
+      {questions.map((q, i) => {
+        const isSelected = !!selections[q.sira];
+        const disabled = anaKilitli && !isSelected;
+        return (
+          <SelectableOptionCard
+            key={q.sira}
+            question={q}
+            isSelected={isSelected}
+            onClick={() => onCheck(q.sira)}
+            isEven={i % 2 === 0}
+            disabled={disabled}
+          />
+        );
+      })}
     </div>
   );
 }
 
 // ============================================
-// LSA TEST CONTENT (logic DEĞİŞMEDİ)
+// LSA TEST CONTENT
 // ============================================
 
 function LSATestContent() {
@@ -106,10 +115,14 @@ function LSATestContent() {
   const [questions, setQuestions]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [selections, setSelections] = useState({});
-  const [acc1Open, setAcc1Open]     = useState(true);
-  const [acc2Open, setAcc2Open]     = useState(false);
-  const [uyari1, setUyari1]         = useState(false);
-  const [uyari2, setUyari2]         = useState(false);
+
+  // Hangi accordion açık: 'algilama' | 'isleme' | null
+  const [acikAna, setAcikAna] = useState('algilama');
+  // Hangi alt accordion açık: 'CE' | 'AC' | 'RO' | 'AE' | null
+  const [acikAlt, setAcikAlt] = useState('CE');
+
+  const [uyariAlg, setUyariAlg] = useState('');
+  const [uyariIsl, setUyariIsl] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -126,8 +139,24 @@ function LSATestContent() {
     load();
   }, []);
 
-  const algılama = questions.filter(q => q.kategori === 'Algılama');
-  const isleme   = questions.filter(q => q.kategori === 'İşleme');
+  const ce = questions.filter(q => q.eksen === 'CE');
+  const ac = questions.filter(q => q.eksen === 'AC');
+  const ro = questions.filter(q => q.eksen === 'RO');
+  const ae = questions.filter(q => q.eksen === 'AE');
+
+  function getCount(list) {
+    return list.filter(q => !!selections[q.sira]).length;
+  }
+
+  const ceCount  = getCount(ce);
+  const acCount  = getCount(ac);
+  const roCount  = getCount(ro);
+  const aeCount  = getCount(ae);
+  const algCount = ceCount + acCount;
+  const islCount = roCount + aeCount;
+
+  const algKilitli = algCount >= ANA_MAX;
+  const islKilitli = islCount >= ANA_MAX;
 
   function handleCheck(sira) {
     const next = { ...selections, [sira]: !selections[sira] };
@@ -139,11 +168,15 @@ function LSATestContent() {
     const scores = { CE: 0, AC: 0, AE: 0, RO: 0 };
     questions.forEach(q => { if (sel[q.sira]) scores[q.eksen]++; });
 
-    const algBeraber = scores.CE > 0 && scores.CE === scores.AC;
-    const islBeraber = scores.AE > 0 && scores.AE === scores.RO;
+    const algEsit = scores.CE > 0 && scores.CE === scores.AC;
+    const islEsit = scores.AE > 0 && scores.AE === scores.RO;
 
-    setUyari1(algBeraber);
-    setUyari2(islBeraber);
+    setUyariAlg(algEsit
+      ? `Yaşayarak (CE: ${scores.CE}) ve Kavramsallaştırarak (AC: ${scores.AC}) eşit. Birini öne çıkaracak şekilde seçimlerinizi gözden geçirin.`
+      : '');
+    setUyariIsl(islEsit
+      ? `Gözlemleyerek (RO: ${scores.RO}) ve Yaparak (AE: ${scores.AE}) eşit. Birini öne çıkaracak şekilde seçimlerinizi gözden geçirin.`
+      : '');
 
     const alg = scores.CE > scores.AC ? 'CE' : scores.AC > scores.CE ? 'AC' : null;
     const isl = scores.AE > scores.RO ? 'AE' : scores.RO > scores.AE ? 'RO' : null;
@@ -155,47 +188,108 @@ function LSATestContent() {
     }
   }
 
-  function getCount(list) {
-    return list.filter(q => !!selections[q.sira]).length;
+  function toggleAna(key) {
+    setAcikAna(prev => prev === key ? null : key);
+    setAcikAlt(key === 'algilama' ? 'CE' : 'RO');
+  }
+
+  function toggleAlt(key) {
+    setAcikAlt(prev => prev === key ? null : key);
   }
 
   if (loading) {
-    return (
-      <div className="kart2__loading">
-        ⏳ Yükleniyor...
-      </div>
-    );
+    return <div className="kart2__loading">⏳ Yükleniyor...</div>;
   }
 
   return (
     <div className="kart2__content">
+
+      {/* ANA ACCORDION 1 — BİLGİYİ NASIL ALGILIYOR? */}
       <Accordion
         title="Bilgiyi Nasıl Algılıyor?"
-        counter={`${getCount(algılama)} / ${algılama.length}`}
-        defaultOpen={acc1Open}
-        onToggle={(open) => setAcc1Open(open)}
+        counter={`${algCount} / ${ANA_MAX}`}
+        defaultOpen={acikAna === 'algilama'}
+        onToggle={() => toggleAna('algilama')}
+        variant={algKilitli ? 'compare' : 'default'}
       >
-        <QuestionList
-          questions={algılama}
-          selections={selections}
-          onCheck={handleCheck}
-        />
-        <WarningMessage message={uyari1 && "Eşit sayıda seçim yapıldı. Lütfen öğrenme stilini aşağıdan manuel olarak seçin."} />
+        {uyariAlg && <WarningMessage message={uyariAlg} />}
+
+        {/* ALT ACCORDION — YAŞAYARAK (CE) */}
+        <Accordion
+          title={`Yaşayarak`}
+          counter={`${ceCount} / ${ALT_MAX}`}
+          defaultOpen={acikAlt === 'CE'}
+          onToggle={() => toggleAlt('CE')}
+          variant="s4-cat"
+        >
+          <QuestionList
+            questions={ce}
+            selections={selections}
+            onCheck={handleCheck}
+            anaKilitli={algKilitli}
+          />
+        </Accordion>
+
+        {/* ALT ACCORDION — KAVRAMSALLAŞTIRARAK (AC) */}
+        <Accordion
+          title={`Kavramsallaştırarak`}
+          counter={`${acCount} / ${ALT_MAX}`}
+          defaultOpen={acikAlt === 'AC'}
+          onToggle={() => toggleAlt('AC')}
+          variant="s4-cat"
+        >
+          <QuestionList
+            questions={ac}
+            selections={selections}
+            onCheck={handleCheck}
+            anaKilitli={algKilitli}
+          />
+        </Accordion>
       </Accordion>
 
+      {/* ANA ACCORDION 2 — BİLGİYİ NASIL İŞLİYOR? */}
       <Accordion
         title="Bilgiyi Nasıl İşliyor?"
-        counter={`${getCount(isleme)} / ${isleme.length}`}
-        defaultOpen={acc2Open}
-        onToggle={(open) => setAcc2Open(open)}
+        counter={`${islCount} / ${ANA_MAX}`}
+        defaultOpen={acikAna === 'isleme'}
+        onToggle={() => toggleAna('isleme')}
+        variant={islKilitli ? 'compare' : 'default'}
       >
-        <QuestionList
-          questions={isleme}
-          selections={selections}
-          onCheck={handleCheck}
-        />
-        <WarningMessage message={uyari2 && "Eşit sayıda seçim yapıldı. Lütfen öğrenme stilini aşağıdan manuel olarak seçin."} />
+        {uyariIsl && <WarningMessage message={uyariIsl} />}
+
+        {/* ALT ACCORDION — GÖZLEMLEYEREK (RO) */}
+        <Accordion
+          title={`Gözlemleyerek`}
+          counter={`${roCount} / ${ALT_MAX}`}
+          defaultOpen={acikAlt === 'RO'}
+          onToggle={() => toggleAlt('RO')}
+          variant="s4-cat"
+        >
+          <QuestionList
+            questions={ro}
+            selections={selections}
+            onCheck={handleCheck}
+            anaKilitli={islKilitli}
+          />
+        </Accordion>
+
+        {/* ALT ACCORDION — YAPARAK (AE) */}
+        <Accordion
+          title={`Yaparak`}
+          counter={`${aeCount} / ${ALT_MAX}`}
+          defaultOpen={acikAlt === 'AE'}
+          onToggle={() => toggleAlt('AE')}
+          variant="s4-cat"
+        >
+          <QuestionList
+            questions={ae}
+            selections={selections}
+            onCheck={handleCheck}
+            anaKilitli={islKilitli}
+          />
+        </Accordion>
       </Accordion>
+
     </div>
   );
 }
