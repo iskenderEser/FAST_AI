@@ -116,7 +116,6 @@ function LSATestContent() {
   const [loading, setLoading]       = useState(true);
   const [selections, setSelections] = useState({});
 
-  // Controlled accordion state
   const [acikAna, setAcikAna] = useState('algilama');
   const [acikAlt, setAcikAlt] = useState('CE');
 
@@ -199,7 +198,7 @@ function LSATestContent() {
         title="Bilgiyi Nasıl Algılıyor?"
         counter={`${algCount} / ${ANA_MAX}`}
         open={acikAna === 'algilama'}
-        onToggle={() => setAcikAna(prev => prev === 'algilama' ? null : 'algilama')}
+        onToggle={() => setAcikAna('algilama')}
         variant="default"
       >
         {uyariAlg && <WarningMessage message={uyariAlg} />}
@@ -208,7 +207,7 @@ function LSATestContent() {
           title="Yaşayarak"
           counter={`${ceCount} / ${ALT_MAX}`}
           open={acikAlt === 'CE'}
-          onToggle={() => setAcikAlt(prev => prev === 'CE' ? null : 'CE')}
+          onToggle={() => setAcikAlt('CE')}
           variant="s4-cat"
         >
           <QuestionList
@@ -223,7 +222,7 @@ function LSATestContent() {
           title="Kavramsallaştırarak"
           counter={`${acCount} / ${ALT_MAX}`}
           open={acikAlt === 'AC'}
-          onToggle={() => setAcikAlt(prev => prev === 'AC' ? null : 'AC')}
+          onToggle={() => setAcikAlt('AC')}
           variant="s4-cat"
         >
           <QuestionList
@@ -240,7 +239,7 @@ function LSATestContent() {
         title="Bilgiyi Nasıl İşliyor?"
         counter={`${islCount} / ${ANA_MAX}`}
         open={acikAna === 'isleme'}
-        onToggle={() => setAcikAna(prev => prev === 'isleme' ? null : 'isleme')}
+        onToggle={() => setAcikAna('isleme')}
         variant="default"
       >
         {uyariIsl && <WarningMessage message={uyariIsl} />}
@@ -249,7 +248,7 @@ function LSATestContent() {
           title="Gözlemleyerek"
           counter={`${roCount} / ${ALT_MAX}`}
           open={acikAlt === 'RO'}
-          onToggle={() => setAcikAlt(prev => prev === 'RO' ? null : 'RO')}
+          onToggle={() => setAcikAlt('RO')}
           variant="s4-cat"
         >
           <QuestionList
@@ -264,7 +263,7 @@ function LSATestContent() {
           title="Yaparak"
           counter={`${aeCount} / ${ALT_MAX}`}
           open={acikAlt === 'AE'}
-          onToggle={() => setAcikAlt(prev => prev === 'AE' ? null : 'AE')}
+          onToggle={() => setAcikAlt('AE')}
           variant="s4-cat"
         >
           <QuestionList
