@@ -116,9 +116,8 @@ function LSATestContent() {
   const [loading, setLoading]       = useState(true);
   const [selections, setSelections] = useState({});
 
-  // Hangi accordion açık: 'algilama' | 'isleme' | null
+  // Controlled accordion state
   const [acikAna, setAcikAna] = useState('algilama');
-  // Hangi alt accordion açık: 'CE' | 'AC' | 'RO' | 'AE' | null
   const [acikAlt, setAcikAlt] = useState('CE');
 
   const [uyariAlg, setUyariAlg] = useState('');
@@ -188,15 +187,6 @@ function LSATestContent() {
     }
   }
 
-  function toggleAna(key) {
-    setAcikAna(prev => prev === key ? null : key);
-    setAcikAlt(key === 'algilama' ? 'CE' : 'RO');
-  }
-
-  function toggleAlt(key) {
-    setAcikAlt(prev => prev === key ? null : key);
-  }
-
   if (loading) {
     return <div className="kart2__loading">⏳ Yükleniyor...</div>;
   }
@@ -208,18 +198,17 @@ function LSATestContent() {
       <Accordion
         title="Bilgiyi Nasıl Algılıyor?"
         counter={`${algCount} / ${ANA_MAX}`}
-        defaultOpen={acikAna === 'algilama'}
-        onToggle={() => toggleAna('algilama')}
-        variant={algKilitli ? 'compare' : 'default'}
+        open={acikAna === 'algilama'}
+        onToggle={() => setAcikAna(prev => prev === 'algilama' ? null : 'algilama')}
+        variant="default"
       >
         {uyariAlg && <WarningMessage message={uyariAlg} />}
 
-        {/* ALT ACCORDION — YAŞAYARAK (CE) */}
         <Accordion
-          title={`Yaşayarak`}
+          title="Yaşayarak"
           counter={`${ceCount} / ${ALT_MAX}`}
-          defaultOpen={acikAlt === 'CE'}
-          onToggle={() => toggleAlt('CE')}
+          open={acikAlt === 'CE'}
+          onToggle={() => setAcikAlt(prev => prev === 'CE' ? null : 'CE')}
           variant="s4-cat"
         >
           <QuestionList
@@ -230,12 +219,11 @@ function LSATestContent() {
           />
         </Accordion>
 
-        {/* ALT ACCORDION — KAVRAMSALLAŞTIRARAK (AC) */}
         <Accordion
-          title={`Kavramsallaştırarak`}
+          title="Kavramsallaştırarak"
           counter={`${acCount} / ${ALT_MAX}`}
-          defaultOpen={acikAlt === 'AC'}
-          onToggle={() => toggleAlt('AC')}
+          open={acikAlt === 'AC'}
+          onToggle={() => setAcikAlt(prev => prev === 'AC' ? null : 'AC')}
           variant="s4-cat"
         >
           <QuestionList
@@ -251,18 +239,17 @@ function LSATestContent() {
       <Accordion
         title="Bilgiyi Nasıl İşliyor?"
         counter={`${islCount} / ${ANA_MAX}`}
-        defaultOpen={acikAna === 'isleme'}
-        onToggle={() => toggleAna('isleme')}
-        variant={islKilitli ? 'compare' : 'default'}
+        open={acikAna === 'isleme'}
+        onToggle={() => setAcikAna(prev => prev === 'isleme' ? null : 'isleme')}
+        variant="default"
       >
         {uyariIsl && <WarningMessage message={uyariIsl} />}
 
-        {/* ALT ACCORDION — GÖZLEMLEYEREK (RO) */}
         <Accordion
-          title={`Gözlemleyerek`}
+          title="Gözlemleyerek"
           counter={`${roCount} / ${ALT_MAX}`}
-          defaultOpen={acikAlt === 'RO'}
-          onToggle={() => toggleAlt('RO')}
+          open={acikAlt === 'RO'}
+          onToggle={() => setAcikAlt(prev => prev === 'RO' ? null : 'RO')}
           variant="s4-cat"
         >
           <QuestionList
@@ -273,12 +260,11 @@ function LSATestContent() {
           />
         </Accordion>
 
-        {/* ALT ACCORDION — YAPARAK (AE) */}
         <Accordion
-          title={`Yaparak`}
+          title="Yaparak"
           counter={`${aeCount} / ${ALT_MAX}`}
-          defaultOpen={acikAlt === 'AE'}
-          onToggle={() => toggleAlt('AE')}
+          open={acikAlt === 'AE'}
+          onToggle={() => setAcikAlt(prev => prev === 'AE' ? null : 'AE')}
           variant="s4-cat"
         >
           <QuestionList
