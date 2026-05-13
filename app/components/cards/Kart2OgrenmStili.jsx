@@ -198,7 +198,7 @@ function LSATestContent() {
         title="Bilgiyi Nasıl Algılıyor?"
         counter={`${algCount} / ${ANA_MAX}`}
         open={acikAna === 'algilama'}
-        onToggle={() => setAcikAna('algilama')}
+        onToggle={() => setAcikAna(prev => prev === 'algilama' ? null : 'algilama')}
         variant="default"
       >
         {uyariAlg && <WarningMessage message={uyariAlg} />}
@@ -207,7 +207,7 @@ function LSATestContent() {
           title="Yaşayarak"
           counter={`${ceCount} / ${ALT_MAX}`}
           open={acikAlt === 'CE'}
-          onToggle={() => setAcikAlt('CE')}
+          onToggle={() => setAcikAlt(prev => prev === 'CE' ? null : 'CE')}
           variant="s4-cat"
         >
           <QuestionList
@@ -222,7 +222,7 @@ function LSATestContent() {
           title="Kavramsallaştırarak"
           counter={`${acCount} / ${ALT_MAX}`}
           open={acikAlt === 'AC'}
-          onToggle={() => setAcikAlt('AC')}
+          onToggle={() => setAcikAlt(prev => prev === 'AC' ? null : 'AC')}
           variant="s4-cat"
         >
           <QuestionList
@@ -239,7 +239,7 @@ function LSATestContent() {
         title="Bilgiyi Nasıl İşliyor?"
         counter={`${islCount} / ${ANA_MAX}`}
         open={acikAna === 'isleme'}
-        onToggle={() => setAcikAna('isleme')}
+        onToggle={() => setAcikAna(prev => prev === 'isleme' ? null : 'isleme')}
         variant="default"
       >
         {uyariIsl && <WarningMessage message={uyariIsl} />}
@@ -248,7 +248,7 @@ function LSATestContent() {
           title="Gözlemleyerek"
           counter={`${roCount} / ${ALT_MAX}`}
           open={acikAlt === 'RO'}
-          onToggle={() => setAcikAlt('RO')}
+          onToggle={() => setAcikAlt(prev => prev === 'RO' ? null : 'RO')}
           variant="s4-cat"
         >
           <QuestionList
@@ -263,7 +263,7 @@ function LSATestContent() {
           title="Yaparak"
           counter={`${aeCount} / ${ALT_MAX}`}
           open={acikAlt === 'AE'}
-          onToggle={() => setAcikAlt('AE')}
+          onToggle={() => setAcikAlt(prev => prev === 'AE' ? null : 'AE')}
           variant="s4-cat"
         >
           <QuestionList

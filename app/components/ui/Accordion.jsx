@@ -47,7 +47,7 @@ export function Accordion({
           {counterBadge && <span className="shared-accordion-badge">{counterBadge}</span>}
         </div>
       </summary>
-      <div className="shared-accordion-body">{children}</div>
+      {isOpen && <div className="shared-accordion-body">{children}</div>}
     </details>
   );
 }
