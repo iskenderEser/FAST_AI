@@ -130,7 +130,6 @@ export default function MainContent() {
 
   const handleS4StyleCalculated = (style) => {
     setSocialStyle(style);
-    setS4ModalOpen(false);
   };
 
   return (
