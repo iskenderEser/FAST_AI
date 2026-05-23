@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Accordion } from './ui/Accordion'; // import { Accordion } from '@/components/ui/Accordion';
-import { Button } from './ui/Button'; // import { Button } from '@/components/ui/Button';
+import { Accordion } from './ui/Accordion';
+import { Button } from './ui/Button';
 
 const S4_STORAGE_KEY = 'fast_s4_selections';
 const S4_RESULT_KEY  = 'fast_s4_result';
@@ -25,11 +25,12 @@ const GROUP_LABELS = {
 const GROUP_KEYS = ['T', 'A', 'C', 'E'];
 
 export default function S4Survey({ onStyleCalculated }) {
-  const [questions, setQuestions]   = useState({ T: [], A: [], C: [], E: [] });
-  const [loading, setLoading]       = useState(true);
-  const [selections, setSelections] = useState({});
+  const [questions, setQuestions]     = useState({ T: [], A: [], C: [], E: [] });
+  const [loading, setLoading]         = useState(true);
+  const [selections, setSelections]   = useState({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [limitMsg, setLimitMsg]     = useState('');
+  const [limitMsg, setLimitMsg]       = useState('');
+  const [result, setResult]           = useState(null);
 
   // ============================================
   // VERİ YÜKLEME
@@ -39,9 +40,7 @@ export default function S4Survey({ onStyleCalculated }) {
       try {
         const res  = await fetch('/api/cpr/get-content?type=s4');
         const data = await res.json();
-        if (data.success && data.s4) {
-          setQuestions(data.s4);
-        }
+        if (data.success && data.s4) setQuestions(data.s4);
       } catch (err) {
         console.error('S4 soruları yüklenemedi:', err);
       } finally {
@@ -93,7 +92,6 @@ export default function S4Survey({ onStyleCalculated }) {
 
   function handleCheck(group, idx, checked) {
     const key = `${group}_${idx}`;
-
     if (checked) {
       const total = axisTotal(group);
       if (total >= S4_AXIS_CAP) {
@@ -106,7 +104,6 @@ export default function S4Survey({ onStyleCalculated }) {
         return;
       }
     }
-
     setSelections(prev => ({ ...prev, [key]: checked }));
   }
 
@@ -134,6 +131,8 @@ export default function S4Survey({ onStyleCalculated }) {
       localStorage.setItem(S4_RESULT_KEY, JSON.stringify({ ...style, combination, counts: c }));
     } catch (e) {}
 
+    setResult(style);
+
     if (onStyleCalculated) {
       onStyleCalculated(style.pill);
     }
@@ -149,11 +148,7 @@ export default function S4Survey({ onStyleCalculated }) {
   // RENDER
   // ============================================
   if (loading) {
-    return (
-      <div className="s4-loading-state">
-        ⏳ S4 soruları yükleniyor...
-      </div>
-    );
+    return <div className="s4-loading-state">⏳ S4 soruları yükleniyor...</div>;
   }
 
   return (
@@ -170,65 +165,77 @@ export default function S4Survey({ onStyleCalculated }) {
           </p>
 
           {limitMsg && (
-            <div className="s4-limit-message">
-              ⚠️ {limitMsg}
-            </div>
+            <div className="s4-limit-message">⚠️ {limitMsg}</div>
           )}
 
-          <div className="s4-wrap">
-            <Accordion
-              title={GROUP_LABELS[currentGroup]}
-              variant="s4-cat"
-              defaultOpen={true}
-            >
-              <div className="s4-content">
-                {(questions[currentGroup] || []).map((soru, idx) => (
-                  <div key={idx} className="s4-question">
-                    <input
-                      type="checkbox"
-                      id={`s4_${currentGroup}_${idx}`}
-                      className="s4-checkbox"
-                      checked={!!selections[`${currentGroup}_${idx}`]}
-                      onChange={e => handleCheck(currentGroup, idx, e.target.checked)}
-                    />
-                    <label htmlFor={`s4_${currentGroup}_${idx}`} className="s4-question-label">
-                      {soru}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </Accordion>
-
-            <div className="s4-nav">
+          {result ? (
+            <div className="s4-result">
+              <div className="s4-result__label">Sosyal Stiliniz</div>
+              <div className="s4-result__value">{result.name}</div>
               <Button
                 variant="ghost"
                 size="small"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
+                onClick={() => setResult(null)}
               >
-                ← Geri
+                Testi Yenile
               </Button>
-
-              {currentPage < totalPages ? (
-                <Button
-                  variant="primary"
-                  size="small"
-                  onClick={() => setCurrentPage(p => p + 1)}
-                >
-                  İleri →
-                </Button>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="small"
-                  onClick={calculateStyle}
-                  className="s4-nav-btn-result"
-                >
-                  Sonucu Göster
-                </Button>
-              )}
             </div>
-          </div>
+          ) : (
+            <div className="s4-wrap">
+              <Accordion
+                title={GROUP_LABELS[currentGroup]}
+                variant="s4-cat"
+                defaultOpen={true}
+              >
+                <div className="s4-content">
+                  {(questions[currentGroup] || []).map((soru, idx) => (
+                    <div key={idx} className="s4-question">
+                      <input
+                        type="checkbox"
+                        id={`s4_${currentGroup}_${idx}`}
+                        className="s4-checkbox"
+                        checked={!!selections[`${currentGroup}_${idx}`]}
+                        onChange={e => handleCheck(currentGroup, idx, e.target.checked)}
+                      />
+                      <label htmlFor={`s4_${currentGroup}_${idx}`} className="s4-question-label">
+                        {soru}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Accordion>
+
+              <div className="s4-nav">
+                <Button
+                  variant="ghost"
+                  size="small"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                >
+                  ← Geri
+                </Button>
+
+                {currentPage < totalPages ? (
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                  >
+                    İleri →
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={calculateStyle}
+                    className="s4-nav-btn-result"
+                  >
+                    Sonucu Göster
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Accordion>
     </div>
