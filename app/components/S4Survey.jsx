@@ -170,7 +170,7 @@ export default function S4Survey({ onStyleCalculated }) {
 
           {result ? (
             <div className="s4-result">
-              <div className="s4-result__label">Sosyal Stiliniz</div>
+              <div className="s4-result__label">Anket Sonucu</div>
               <div className="s4-result__value">{result.name}</div>
               <Button
                 variant="ghost"
